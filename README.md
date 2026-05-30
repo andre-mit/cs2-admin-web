@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CS2 Admin - Frontend
 
-## Getting Started
+This is the frontend project for the CS2 (Counter-Strike 2) administration panel. It is built with Next.js and consumes a C# RESTful API.
 
-First, run the development server:
+## Technologies Used
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
+- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
+- **Components:** [Shadcn UI](https://ui.shadcn.com/) (based on Radix UI and Lucide React)
+- **Authentication:** [NextAuth.js](https://next-auth.js.org/) with **Steam** provider (`next-auth-steam`)
+- **Data Fetching:** [SWR](https://swr.vercel.app/)
+- **Package Manager:** [Bun](https://bun.sh/)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Implemented Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Dashboard:** General overview of the administrative panel.
+- **Map Management (`/dashboard/maps`):**
+  - Add, edit, and remove maps.
+  - Direct upload of background images and badges to AWS S3 (via presigned URLs) or fallback via the backend.
+  - Toggle between Community (Workshop) and Official maps.
+- **Server and Lobby Management:**
+  - Configured interfaces to display servers and lobby details.
+- **Steam Authentication:**
+  - Secure and exclusive login via Steam account.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup and Installation
 
-## Learn More
+1. Rename (or create) the `.env.local` file in the root of the `cs2-admin` project with the following environment variables:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:5000 # Backend URL
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_secret_key_here
+   STEAM_API_KEY=your_steam_api_key
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. Install dependencies:
+   ```bash
+   bun install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Start the development server:
+   ```bash
+   bun run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+## Next Steps (Suggested Improvements)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Componentization:** Extract modals/forms from main pages (e.g., `maps/page.tsx`) into reusable components to improve code readability.
+- **Global State Management:** Add libraries like `Zustand` to globally manage the active lobby and system notifications.
+- **Error Handling:** Implement a custom hook for requests that automatically triggers error toasts if the API fails (e.g., 500 server errors or 400 validation errors).
+- **Protected Routes:** Use Next.js `middleware.ts` to globally protect all routes under `/dashboard`, avoiding conditional checks on every page.
