@@ -1,11 +1,43 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+let cachedToken: string | null = null;
+let tokenPromise: Promise<string | null> | null = null;
+
+async function getAuthToken(): Promise<string | null> {
+  if (typeof window === "undefined") {
+    // In Server Components, we'd need a different way to get the token if we wanted to call the external API directly.
+    return null; 
+  }
+
+  if (cachedToken) return cachedToken;
+  if (tokenPromise) return tokenPromise;
+
+  tokenPromise = fetch("/api/auth/token")
+    .then(res => {
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
+    })
+    .then(data => {
+      cachedToken = data.token;
+      return cachedToken;
+    })
+    .catch(() => null)
+    .finally(() => {
+      tokenPromise = null;
+    });
+
+  return tokenPromise;
+}
+
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  
+  const token = await getAuthToken();
 
   const defaultOptions: RequestInit = {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       ...options?.headers,
     },
     ...options,
@@ -37,7 +69,17 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
   return response.json();
 }
 
-export const swrFetcher = (url: string) => fetch(url.startsWith('http') ? url : `${API_BASE_URL}${url}`).then((res) => {
+export const swrFetcher = async (url: string) => {
+  const token = await getAuthToken();
+  const fetchUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  
+  const res = await fetch(fetchUrl, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    }
+  });
+
   if (!res.ok) throw new Error('Falha ao buscar dados');
   return res.json();
-});
+};

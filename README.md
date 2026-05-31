@@ -31,6 +31,7 @@ This is the frontend project for the CS2 (Counter-Strike 2) administration panel
    NEXTAUTH_URL=http://localhost:3000
    NEXTAUTH_SECRET=your_secret_key_here
    STEAM_API_KEY=your_steam_api_key
+   JWT_SECRET=a_super_secret_key_with_at_least_32_characters # Must match backend JwtSettings:SecretKey
    ```
 
 2. Install dependencies:

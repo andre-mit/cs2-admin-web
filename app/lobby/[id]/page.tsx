@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import * as signalR from "@microsoft/signalr";
 import { Swords, Ban, CheckCircle, Plus } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/services/apiClient";
 import { lobbiesService, Lobby, LobbyPlayer } from "@/services/lobbiesService";
 import { mapsService, GameMap } from "@/services/mapsService";
@@ -12,8 +12,9 @@ import { mapsService, GameMap } from "@/services/mapsService";
 export default function LobbyPage() {
   const { data: session, status } = useSession();
   const params = useParams();
+  const router = useRouter();
   const lobbyId = params.id as string;
-  
+
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [maps, setMaps] = useState<GameMap[]>([]);
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
@@ -25,7 +26,7 @@ export default function LobbyPage() {
     lobbiesService.getById(parseInt(lobbyId))
       .then(data => setLobby(data as unknown as Lobby))
       .catch(console.error);
-      
+
     mapsService.getAll()
       .then(data => setMaps(data))
       .catch(console.error);
@@ -43,6 +44,9 @@ export default function LobbyPage() {
         newConnection.on("LobbyUpdated", (updatedLobby: Lobby) => {
           setLobby(updatedLobby);
         });
+        newConnection.on("LobbyDeleted", () => {
+          router.push("/lobby/closed");
+        });
         setConnection(newConnection);
       })
       .catch(e => console.error("Connection failed: ", e));
@@ -55,7 +59,7 @@ export default function LobbyPage() {
 
   const joinTeam = async (teamId: number) => {
     if (!session?.user) return;
-    
+
     await lobbiesService.join(parseInt(lobbyId), {
       steamId,
       name: session.user.name || "Player",
@@ -102,9 +106,9 @@ export default function LobbyPage() {
 
   const getVetoState = () => {
     if (!lobby || lobby.state !== "Veto") return { team: 0, action: 'none' };
-    
+
     const historyCount = vetoHistory.length;
-    
+
     // BO1
     if (lobby.maxMaps === 1) {
       return { team: (historyCount % 2) === 0 ? 1 : 2, action: 'ban' };
@@ -130,7 +134,7 @@ export default function LobbyPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        
+
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl flex justify-between items-center shadow-lg">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -143,8 +147,8 @@ export default function LobbyPage() {
             {isAdmin && lobby.state === "Waiting" && (
               <>
                 <button onClick={randomizeTeams} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium">Randomize Teams</button>
-                <button 
-                  onClick={() => changeState("Veto")} 
+                <button
+                  onClick={() => changeState("Veto")}
                   disabled={team1.length + team2.length < 2}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium"
                 >
@@ -163,8 +167,8 @@ export default function LobbyPage() {
 
         {lobby.state === "Veto" && (
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Ban className="text-red-500"/> Map Veto Phase</h2>
-            
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Ban className="text-red-500" /> Map Veto Phase</h2>
+
             <div className="mb-6 space-y-2">
               <h3 className="text-sm font-bold text-slate-400 uppercase">Veto History</h3>
               <div className="flex flex-wrap gap-2">
@@ -181,12 +185,12 @@ export default function LobbyPage() {
 
             {vetoHistory.length < mapPool.length && activeTeam !== 0 && (
               <div className={`p-4 rounded-lg mb-6 text-center font-bold text-xl border shadow-lg ${activeTeam === 1 ? 'bg-indigo-900/30 border-indigo-500/50 text-indigo-400' : 'bg-orange-900/30 border-orange-500/50 text-orange-400'}`}>
-                Team {activeTeam}'s Turn to {vetoState.action.toUpperCase()}
+                Team {activeTeam}&apos;s Turn to {vetoState.action.toUpperCase()}
               </div>
             )}
-            
+
             {vetoHistory.length >= mapPool.length && (
-               <div className="p-4 rounded-lg mb-6 text-center font-bold text-xl border bg-green-900/30 border-green-500/50 text-green-400 shadow-lg">
+              <div className="p-4 rounded-lg mb-6 text-center font-bold text-xl border bg-green-900/30 border-green-500/50 text-green-400 shadow-lg">
                 Veto Complete! Admin can now Generate Match.
               </div>
             )}
@@ -196,7 +200,7 @@ export default function LobbyPage() {
                 const isBanned = vetoHistory.some(vh => vh === `ban:${map}`);
                 const isPicked = vetoHistory.some(vh => vh === `pick:${map}`);
                 const isAvailable = !isBanned && !isPicked;
-                
+
                 const mapData = maps.find(m => (m.isCommunity ? `ws:${m.identifier}` : m.identifier) === map);
                 const mapImage = mapData?.imageUrl || "https://raw.githubusercontent.com/SteamDatabase/GameTracking-CS2/master/csgo/panorama/images/backgrounds/blacksite.png";
                 const mapBadge = mapData?.badgeUrl;
@@ -205,12 +209,12 @@ export default function LobbyPage() {
                 const isClickable = isAvailable && isMyTurn;
 
                 return (
-                  <div 
-                    key={map} 
+                  <div
+                    key={map}
                     onClick={() => {
-                        if (isClickable) {
-                            vetoMap(map, vetoState.action);
-                        }
+                      if (isClickable) {
+                        vetoMap(map, vetoState.action);
+                      }
                     }}
                     className={`relative overflow-hidden rounded-lg border flex flex-col items-center justify-between h-40 p-3 text-center transition-all bg-cover bg-center
                     ${isBanned ? 'border-red-900/50 opacity-30 grayscale' : isPicked ? 'border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'border-slate-700'}
@@ -221,7 +225,7 @@ export default function LobbyPage() {
                       <img src={mapBadge} alt={cleanMapName} className="absolute top-1.5 right-1.5 h-8 w-8 object-contain drop-shadow-lg" />
                     )}
                     <span className="font-extrabold tracking-wider text-sm mt-2 text-white drop-shadow-md">{cleanMapName}</span>
-                    
+
                     {isClickable && (
                       <div className="mt-auto w-full text-center">
                         <span className={`text-xs font-bold px-2 py-1 rounded shadow-md uppercase ${vetoState.action === 'ban' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
@@ -242,7 +246,7 @@ export default function LobbyPage() {
             <p className="mb-4 text-slate-300">The server administrator can now execute the MatchZy config URL on the server to start the match.</p>
             <div className="bg-slate-950 p-4 rounded-lg flex items-center justify-between border border-slate-800">
               <code className="text-indigo-300">matchzy_loadmatch_url {API_BASE_URL}/api/v1/lobbies/{lobbyId}/config.json</code>
-              <button 
+              <button
                 onClick={() => navigator.clipboard.writeText(`matchzy_loadmatch_url ${API_BASE_URL}/api/v1/lobbies/${lobbyId}/config.json`)}
                 className="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-sm"
               >
@@ -253,7 +257,7 @@ export default function LobbyPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
             <div className="bg-indigo-900/40 p-4 border-b border-indigo-900/50 flex justify-between items-center">
               <h2 className="font-bold text-indigo-300">Team A</h2>

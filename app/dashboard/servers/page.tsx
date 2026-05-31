@@ -39,7 +39,7 @@ export default function ServersPage() {
     setStatusMap(prev => ({ ...prev, [serverId]: { loading: true, online: null } }));
     try {
       const data = await serversService.getStatus(serverId);
-      setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: data.isOnline } }));
+      setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: data.online } }));
     } catch {
       setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: false } }));
     }

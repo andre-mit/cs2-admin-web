@@ -10,10 +10,8 @@ export interface CS2Server {
 }
 
 export interface ServerStatus {
-  isOnline: boolean;
-  players: number;
-  maxPlayers: number;
-  map: string;
+  online: boolean;
+  response?: string;
 }
 
 export const serversService = {

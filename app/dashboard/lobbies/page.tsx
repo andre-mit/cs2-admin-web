@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Plus, Users, Swords, Play } from "lucide-react";
+import { Plus, Users, Swords, Play, Trash2 } from "lucide-react";
 import { lobbiesService, Lobby } from "@/services/lobbiesService";
 import { GameMap } from "@/services/mapsService";
 import { swrFetcher } from "@/services/apiClient";
@@ -11,7 +11,7 @@ export default function LobbiesAdminPage() {
   const { data: lobbies, mutate } = useSWR<Lobby[]>("/api/v1/lobbies", swrFetcher);
   const { data: maps } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const [isCreating, setIsCreating] = useState(false);
-  
+
   const [title, setTitle] = useState("");
   const [maxMaps, setMaxMaps] = useState("1");
   const [mapSidesMode, setMapSidesMode] = useState("knife");
@@ -27,12 +27,19 @@ export default function LobbiesAdminPage() {
       title,
       maxMaps: parseInt(maxMaps),
       state: "WAITING", // Initial state
-      // @ts-ignore mapSidesMode & mapPool are extended lobby props in API
+      // @ts-expect-error mapSidesMode & mapPool are extended lobby props in API
       mapSidesMode,
       mapPool: selectedMaps.join(",")
     });
     setIsCreating(false);
     mutate();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Are you sure you want to delete this lobby?")) {
+      await lobbiesService.delete(id);
+      mutate();
+    }
   };
 
   return (
@@ -45,7 +52,7 @@ export default function LobbiesAdminPage() {
           </h1>
           <p className="text-slate-400 mt-1">Create lobbies for players to join, randomize teams and veto maps.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsCreating(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
         >
@@ -60,7 +67,7 @@ export default function LobbiesAdminPage() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">Lobby Title</label>
-              <input 
+              <input
                 required value={title} onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white"
                 placeholder="Friday Night PUG"
@@ -69,7 +76,7 @@ export default function LobbiesAdminPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Series Format</label>
-                <select 
+                <select
                   value={maxMaps} onChange={(e) => setMaxMaps(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white"
                 >
@@ -80,7 +87,7 @@ export default function LobbiesAdminPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Side Selection</label>
-                <select 
+                <select
                   value={mapSidesMode} onChange={(e) => setMapSidesMode(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white"
                 >
@@ -90,14 +97,14 @@ export default function LobbiesAdminPage() {
                 </select>
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Map Pool</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-48 overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950">
                 {maps?.map(m => (
                   <label key={m.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-900 p-1 rounded">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600"
                       checked={selectedMaps.includes(m.isCommunity ? `ws:${m.identifier}` : m.identifier)}
                       onChange={(e) => {
@@ -139,14 +146,23 @@ export default function LobbiesAdminPage() {
                 <span>Best of {lobby.maxMaps}</span>
               </div>
             </div>
-            <a 
-              href={`/lobby/${lobby.id}`}
-              target="_blank"
-              className="flex items-center justify-center gap-2 w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
-            >
-              Open Lobby
-              <Play className="w-4 h-4" />
-            </a>
+            <div className="flex gap-2 w-full mt-2">
+              <a
+                href={`/lobby/${lobby.id}`}
+                target="_blank"
+                className="flex flex-1 items-center justify-center gap-2 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+              >
+                Open Lobby
+                <Play className="w-4 h-4" />
+              </a>
+              <button
+                onClick={() => handleDelete(lobby.id)}
+                className="p-2 bg-red-900/50 hover:bg-red-800 text-red-200 rounded-lg transition-colors"
+                title="Delete Lobby"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
