@@ -1,17 +1,30 @@
+"use client";
+
 import Link from "next/link";
-import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Settings } from "lucide-react";
+import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Settings, Sun, Moon, Globe } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
+import { useTheme } from "next-themes";
+import { useSyncExternalStore } from "react";
+
+const emptySubscribe = () => () => {};
+const getClientMounted = () => true;
+const getServerMounted = () => false;
 
 const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "PUG Lobbies", href: "/dashboard/lobbies", icon: Swords },
-  { name: "Mapas", href: "/dashboard/maps", icon: MapIcon },
-  { name: "Matches", href: "/dashboard/matches", icon: Shield },
-  { name: "Teams", href: "/dashboard/teams", icon: Users },
-  { name: "Seasons", href: "/dashboard/seasons", icon: Trophy },
-  { name: "Servers", href: "/dashboard/servers", icon: Server },
+  { key: "dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { key: "lobbies", href: "/dashboard/lobbies", icon: Swords },
+  { key: "maps", href: "/dashboard/maps", icon: MapIcon },
+  { key: "matches", href: "/dashboard/matches", icon: Shield },
+  { key: "teams", href: "/dashboard/teams", icon: Users },
+  { key: "seasons", href: "/dashboard/seasons", icon: Trophy },
+  { key: "servers", href: "/dashboard/servers", icon: Server },
 ];
 
 export default function Sidebar() {
+  const { t, locale, setLocale } = useI18n();
+  const { theme, setTheme } = useTheme();
+  const mounted = useSyncExternalStore(emptySubscribe, getClientMounted, getServerMounted);
+
   return (
     <aside className="w-64 h-full bg-slate-900 border-r border-slate-800 flex flex-col">
       <div className="h-16 flex items-center px-6 border-b border-slate-800">
@@ -25,19 +38,40 @@ export default function Sidebar() {
           const Icon = item.icon;
           return (
             <Link
-              key={item.name}
+              key={item.key}
               href={item.href}
               className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <Icon className="w-5 h-5 text-slate-400" />
-              {item.name}
+              {t(`sidebar.${item.key}`)}
             </Link>
           );
         })}
       </nav>
       <div className="p-4 border-t border-slate-800">
-        <div className="text-xs text-slate-500 text-center">
-          G5API & G5V Reimagined
+        <div className="flex items-center justify-between gap-2">
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            title={t("sidebar.theme_" + (theme === "dark" ? "light" : "dark"))}
+          >
+            {mounted && theme === "dark" ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
+          </button>
+
+          {/* Language Toggle */}
+          <button
+            onClick={() => setLocale(locale === "pt" ? "en" : "pt")}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors uppercase"
+            title={t("sidebar.language")}
+          >
+            <Globe className="w-4 h-4" />
+            {locale}
+          </button>
         </div>
       </div>
     </aside>
