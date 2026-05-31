@@ -6,22 +6,30 @@ let tokenPromise: Promise<string | null> | null = null;
 async function getAuthToken(): Promise<string | null> {
   if (typeof window === "undefined") {
     // In Server Components, we'd need a different way to get the token if we wanted to call the external API directly.
-    return null; 
+    return null;
   }
 
   if (cachedToken) return cachedToken;
   if (tokenPromise) return tokenPromise;
 
   tokenPromise = fetch("/api/auth/token")
-    .then(res => {
-      if (!res.ok) throw new Error("Unauthorized");
+    .then(async res => {
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("[getAuthToken] Fail to get token:", res.status, errText);
+        throw new Error("Unauthorized");
+      }
       return res.json();
     })
     .then(data => {
+      console.log("[getAuthToken] Token obtained successfully.");
       cachedToken = data.token;
       return cachedToken;
     })
-    .catch(() => null)
+    .catch((err) => {
+      console.error("[getAuthToken] Error on request:", err);
+      return null;
+    })
     .finally(() => {
       tokenPromise = null;
     });
@@ -31,7 +39,7 @@ async function getAuthToken(): Promise<string | null> {
 
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const token = await getAuthToken();
 
   const defaultOptions: RequestInit = {
@@ -72,7 +80,7 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
 export const swrFetcher = async (url: string) => {
   const token = await getAuthToken();
   const fetchUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
-  
+
   const res = await fetch(fetchUrl, {
     headers: {
       "Content-Type": "application/json",
