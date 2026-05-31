@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { swrFetcher } from "@/services/apiClient";
 import { Team } from "@/services/teamsService";
 import { CS2Server } from "@/services/serversService";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Match {
   id: number;
@@ -12,6 +13,7 @@ interface Match {
 }
 
 export default function Home() {
+  const { t } = useI18n();
   const { data: teams } = useSWR<Team[]>("/api/v1/teams", swrFetcher);
   const { data: servers } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
   const { data: matches } = useSWR<Match[]>("/api/v1/matches", swrFetcher);
@@ -22,16 +24,16 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
-        <p className="text-slate-400">Overview of your CS2 servers, matches, and players.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-white">{t("dashboard.title")}</h1>
+        <p className="text-slate-400">{t("dashboard.description")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Active Matches", value: matches === undefined ? "-" : activeMatches.toString(), icon: Activity, color: "text-emerald-500" },
-          { label: "Total Servers", value: servers === undefined ? "-" : servers.length.toString(), icon: Server, color: "text-blue-500" },
-          { label: "Registered Teams", value: teams === undefined ? "-" : teams.length.toString(), icon: Users, color: "text-indigo-500" },
-          { label: "Ongoing Seasons", value: "1", icon: Trophy, color: "text-amber-500" },
+          { label: t("dashboard.active_matches"), value: matches === undefined ? "-" : activeMatches.toString(), icon: Activity, color: "text-emerald-500" },
+          { label: t("dashboard.total_servers"), value: servers === undefined ? "-" : servers.length.toString(), icon: Server, color: "text-blue-500" },
+          { label: t("dashboard.registered_teams"), value: teams === undefined ? "-" : teams.length.toString(), icon: Users, color: "text-indigo-500" },
+          { label: t("dashboard.ongoing_seasons"), value: "1", icon: Trophy, color: "text-amber-500" },
         ].map((stat, i) => (
           <div key={i} className="p-6 bg-slate-900 border border-slate-800 rounded-xl shadow-sm flex items-center gap-4">
             <div className={`p-3 bg-slate-950 rounded-lg ${stat.color}`}>
@@ -47,25 +49,25 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
         <div className="lg:col-span-2 p-6 bg-slate-900 border border-slate-800 rounded-xl shadow-sm h-96 flex flex-col">
-          <h2 className="text-lg font-semibold text-white mb-4">Recent Matches</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">{t("dashboard.recent_matches")}</h2>
           <div className="flex-1 overflow-y-auto">
             {matches === undefined ? (
               <div className="flex-1 h-full flex items-center justify-center border border-dashed border-slate-800 rounded-lg">
-                <p className="text-slate-500">Loading matches...</p>
+                <p className="text-slate-500">{t("dashboard.loading_matches")}</p>
               </div>
             ) : matches.length === 0 ? (
               <div className="flex-1 h-full flex items-center justify-center border border-dashed border-slate-800 rounded-lg">
-                <p className="text-slate-500">No matches found</p>
+                <p className="text-slate-500">{t("dashboard.no_matches")}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {matches.slice(0, 5).map(match => (
                   <div key={match.id} className="p-3 bg-slate-950 rounded-lg border border-slate-800 flex justify-between items-center">
                     <div>
-                      <p className="text-white font-medium">Match #{match.id}</p>
-                      <p className="text-slate-400 text-sm">Status: {match.status}</p>
+                      <p className="text-white font-medium">{t("dashboard.match")} #{match.id}</p>
+                      <p className="text-slate-400 text-sm">{t("dashboard.status")}: {match.status}</p>
                     </div>
-                    <span className="text-indigo-400 text-sm font-medium">View</span>
+                    <span className="text-indigo-400 text-sm font-medium">{t("dashboard.view")}</span>
                   </div>
                 ))}
               </div>
@@ -73,15 +75,15 @@ export default function Home() {
           </div>
         </div>
         <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl shadow-sm h-96 flex flex-col">
-          <h2 className="text-lg font-semibold text-white mb-4">Server Status</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">{t("dashboard.server_status")}</h2>
           <div className="flex-1 overflow-y-auto">
             {servers === undefined ? (
               <div className="flex-1 h-full flex items-center justify-center border border-dashed border-slate-800 rounded-lg">
-                <p className="text-slate-500">Loading servers...</p>
+                <p className="text-slate-500">{t("dashboard.loading_servers")}</p>
               </div>
             ) : servers.length === 0 ? (
               <div className="flex-1 h-full flex items-center justify-center border border-dashed border-slate-800 rounded-lg">
-                <p className="text-slate-500">No active servers</p>
+                <p className="text-slate-500">{t("dashboard.no_servers")}</p>
               </div>
             ) : (
               <div className="space-y-3">

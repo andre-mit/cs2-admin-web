@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { useState } from "react";
 import { serversService, CS2Server } from "@/services/serversService";
 import { swrFetcher } from "@/services/apiClient";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface ServerStatus {
   loading: boolean;
@@ -12,6 +13,7 @@ interface ServerStatus {
 }
 
 export default function ServersPage() {
+  const { t } = useI18n();
   const { data: servers, error, isLoading, mutate } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,16 +62,16 @@ export default function ServersPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
             <Server className="w-8 h-8 text-blue-500" />
-            Servers
+            {t("servers.title")}
           </h1>
-          <p className="text-slate-400 mt-1">Manage CS2 instances and RCON credentials.</p>
+          <p className="text-slate-400 mt-1">{t("servers.description")}</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
-          Add Server
+          {t("servers.add_server")}
         </button>
       </div>
 
@@ -77,7 +79,7 @@ export default function ServersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-screen">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Add New Server</h2>
+              <h2 className="text-xl font-bold text-white">{t("servers.new_server")}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -85,18 +87,18 @@ export default function ServersPage() {
             <form onSubmit={handleCreateServer}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Display Name</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.display_name")}</label>
                   <input
                     type="text"
                     value={formData.displayName}
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. Public Scrim #1"
+                    placeholder={t("servers.display_name_placeholder")}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">IP Address</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.ip_address")}</label>
                     <input
                       type="text"
                       required
@@ -107,7 +109,7 @@ export default function ServersPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Port</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.port")}</label>
                     <input
                       type="number"
                       required
@@ -118,7 +120,7 @@ export default function ServersPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">RCON Password</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.rcon_password")}</label>
                   <input
                     type="password"
                     value={formData.rconPassword}
@@ -133,14 +135,14 @@ export default function ServersPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                 >
-                  Cancel
+                  {t("servers.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? "Saving..." : "Save Server"}
+                  {isSubmitting ? t("servers.saving") : t("servers.save_server")}
                 </button>
               </div>
             </form>
@@ -148,11 +150,11 @@ export default function ServersPage() {
         </div>
       )}
 
-      {isLoading && <div className="text-slate-400">Loading servers...</div>}
-      {error && <div className="text-red-500">Error fetching servers</div>}
+      {isLoading && <div className="text-slate-400">{t("servers.loading")}</div>}
+      {error && <div className="text-red-500">{t("servers.error_fetching")}</div>}
       {servers && servers.length === 0 && (
         <div className="p-12 border border-dashed border-slate-800 rounded-xl text-center">
-          <p className="text-slate-500">No servers configured yet.</p>
+          <p className="text-slate-500">{t("servers.no_servers")}</p>
         </div>
       )}
 
@@ -168,28 +170,28 @@ export default function ServersPage() {
                 </div>
               </div>
               <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${server.inUse ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-300'}`}>
-                {server.inUse ? "In Match" : "Available"}
+                {server.inUse ? t("servers.in_match") : t("servers.available")}
               </span>
             </div>
             <div className="p-4 bg-slate-950/50 flex-1">
               {statusMap[server.id]?.online === true && (
-                <p className="text-sm text-green-400 font-medium">RCON connection successful.</p>
+                <p className="text-sm text-green-400 font-medium">{t("servers.rcon_success")}</p>
               )}
               {statusMap[server.id]?.online === false && (
-                <p className="text-sm text-red-400 font-medium">RCON connection failed.</p>
+                <p className="text-sm text-red-400 font-medium">{t("servers.rcon_failed")}</p>
               )}
               {statusMap[server.id]?.online == null && (
-                <p className="text-sm text-slate-500">Ready to receive commands.</p>
+                <p className="text-sm text-slate-500">{t("servers.ready")}</p>
               )}
             </div>
             <div className="p-4 border-t border-slate-800 flex justify-end gap-3">
-              <button className="text-sm text-slate-400 hover:text-white transition-colors">Edit</button>
+              <button className="text-sm text-slate-400 hover:text-white transition-colors">{t("servers.edit")}</button>
               <button
                 onClick={() => testRcon(server.id)}
                 disabled={statusMap[server.id]?.loading}
                 className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
               >
-                {statusMap[server.id]?.loading ? "Testing..." : "Test RCON"}
+                {statusMap[server.id]?.loading ? t("servers.testing") : t("servers.test_rcon")}
               </button>
             </div>
           </div>

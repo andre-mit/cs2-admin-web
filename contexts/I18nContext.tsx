@@ -1,83 +1,44 @@
 "use client";
 
-import React, { createContext, useContext, useSyncExternalStore } from "react";
-
-type Locale = "pt" | "en";
+import React, { createContext, useContext } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 type Dictionary = {
   [key: string]: string | Dictionary;
 };
 
-const dictionaries: Record<Locale, Dictionary> = {
-  pt: {
-    sidebar: {
-      dashboard: "Painel",
-      lobbies: "Salas PUG",
-      maps: "Mapas",
-      matches: "Partidas",
-      teams: "Equipes",
-      seasons: "Temporadas",
-      servers: "Servidores",
-      theme_light: "Claro",
-      theme_dark: "Escuro",
-      theme_system: "Sistema",
-      language: "Idioma"
-    }
-  },
-  en: {
-    sidebar: {
-      dashboard: "Dashboard",
-      lobbies: "PUG Lobbies",
-      maps: "Maps",
-      matches: "Matches",
-      teams: "Teams",
-      seasons: "Seasons",
-      servers: "Servers",
-      theme_light: "Light",
-      theme_dark: "Dark",
-      theme_system: "System",
-      language: "Language"
-    }
-  }
-};
-
 type I18nContextType = {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
+  locale: string;
+  setLocale: (newLocale: string) => void;
   t: (key: string) => string;
 };
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
-const subscribe = (callback: () => void) => {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener("storage", callback);
-  window.addEventListener("locale-change", callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener("locale-change", callback);
-  };
-};
+export function I18nProvider({ 
+  children, 
+  locale, 
+  dictionary 
+}: { 
+  children: React.ReactNode;
+  locale: string;
+  dictionary: Dictionary;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
 
-const getSnapshot = (): Locale => {
-  const saved = localStorage.getItem("app-locale");
-  if (saved === "pt" || saved === "en") return saved as Locale;
-  return navigator.language.startsWith("pt") ? "pt" : "en";
-};
-
-const getServerSnapshot = (): Locale => "en";
-
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const locale = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  const setLocale = (newLocale: Locale) => {
-    localStorage.setItem("app-locale", newLocale);
-    window.dispatchEvent(new Event("locale-change"));
+  const setLocale = (newLocale: string) => {
+    if (!pathname) return;
+    const segments = pathname.split('/');
+    // segments[0] is "", segments[1] is the current locale "en" or "pt"
+    segments[1] = newLocale;
+    // Push the new URL and let the server re-render with the new dictionary
+    router.push(segments.join('/'));
   };
 
   const t = (path: string): string => {
     const keys = path.split(".");
-    let current: string | Dictionary = dictionaries[locale];
+    let current: string | Dictionary = dictionary;
 
     for (const key of keys) {
       if (typeof current !== "object" || current === null || !(key in current)) {
@@ -102,10 +63,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 export function useI18n() {
   const context = useContext(I18nContext);
   if (context === undefined) {
-    // Return a dummy context during SSR/hydration to avoid errors
     return {
-      locale: "en" as Locale,
-      setLocale: () => { },
+      locale: "en",
+      setLocale: () => {},
       t: (key: string) => key,
     };
   }

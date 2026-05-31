@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { Plus, Edit, Trash2, Map, Globe, Shield, Upload, Link } from "lucide-react";
 import { mapsService, GameMap } from "@/services/mapsService";
 import { swrFetcher, API_BASE_URL } from "@/services/apiClient";
+import { useI18n } from "@/contexts/I18nContext";
 
 type ImageMode = "url" | "upload";
 
@@ -48,6 +49,7 @@ async function uploadToS3(file: File, mapName: string, imageType: "background" |
 }
 
 export default function MapsPage() {
+  const { t } = useI18n();
   const { data: mapsData, mutate: fetchMaps } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const maps = mapsData || [];
 
@@ -95,7 +97,7 @@ export default function MapsPage() {
       }
     } catch (e) {
       console.error(e);
-      alert("Failed to save map.");
+      alert(t("maps.save_failed"));
       return;
     }
 
@@ -105,13 +107,13 @@ export default function MapsPage() {
   };
 
   const deleteMap = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this map?")) return;
+    if (!confirm(t("maps.confirm_delete"))) return;
     
     try {
       await mapsService.delete(id);
     } catch(e) {
       console.error(e);
-      alert("Failed to delete map.");
+      alert(t("maps.delete_failed"));
     }
     fetchMaps();
   };
@@ -135,23 +137,23 @@ export default function MapsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Map className="text-indigo-500" />
-          Maps
+          {t("maps.title")}
         </h1>
         <button 
           onClick={openNew}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" /> New Map
+          <Plus className="w-4 h-4" /> {t("maps.new_map")}
         </button>
       </div>
 
       {isEditing && (
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-          <h2 className="text-xl font-bold mb-4">{currentMap.id ? 'Edit Map' : 'New Map'}</h2>
+          <h2 className="text-xl font-bold mb-4">{currentMap.id ? t("maps.edit_map") : t("maps.new_map")}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Display Name (e.g. Dust 2)</label>
+                <label className="block text-sm font-medium text-slate-400 mb-1">{t("maps.display_name")}</label>
                 <input 
                   type="text" required
                   className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white"
@@ -160,7 +162,7 @@ export default function MapsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Identifier (e.g. de_dust2 or Workshop ID)</label>
+                <label className="block text-sm font-medium text-slate-400 mb-1">{t("maps.identifier")}</label>
                 <input 
                   type="text" required
                   className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white"
@@ -172,13 +174,13 @@ export default function MapsPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-slate-400">Background Image</label>
+                <label className="block text-sm font-medium text-slate-400">{t("maps.background_image")}</label>
                 <div className="flex gap-1 text-xs">
                   <button type="button" onClick={() => setBgMode("url")} className={`px-2 py-0.5 rounded flex items-center gap-1 ${bgMode === "url" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"}`}>
-                    <Link className="w-3 h-3" /> URL
+                    <Link className="w-3 h-3" /> {t("maps.url")}
                   </button>
                   <button type="button" onClick={() => setBgMode("upload")} className={`px-2 py-0.5 rounded flex items-center gap-1 ${bgMode === "upload" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"}`}>
-                    <Upload className="w-3 h-3" /> Upload
+                    <Upload className="w-3 h-3" /> {t("maps.upload")}
                   </button>
                 </div>
               </div>
@@ -194,7 +196,7 @@ export default function MapsPage() {
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-950 border border-dashed border-slate-700 rounded-lg cursor-pointer hover:border-indigo-500 transition-colors text-slate-400 text-sm">
                     <Upload className="w-4 h-4" />
-                    {bgUploading ? "Uploading..." : currentMap.imageUrl ? "File uploaded ✓" : "Choose file"}
+                    {bgUploading ? t("maps.uploading") : currentMap.imageUrl ? t("maps.file_uploaded") : t("maps.choose_file")}
                     <input type="file" accept="image/*" className="hidden" onChange={handleBgFile} disabled={bgUploading} />
                   </label>
                 </div>
@@ -207,13 +209,13 @@ export default function MapsPage() {
             {/* Badge Image */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-slate-400">Badge Image <span className="text-slate-600">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-400">{t("maps.badge_image")} <span className="text-slate-600">{t("maps.optional")}</span></label>
                 <div className="flex gap-1 text-xs">
                   <button type="button" onClick={() => setBadgeMode("url")} className={`px-2 py-0.5 rounded flex items-center gap-1 ${badgeMode === "url" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"}`}>
-                    <Link className="w-3 h-3" /> URL
+                    <Link className="w-3 h-3" /> {t("maps.url")}
                   </button>
                   <button type="button" onClick={() => setBadgeMode("upload")} className={`px-2 py-0.5 rounded flex items-center gap-1 ${badgeMode === "upload" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"}`}>
-                    <Upload className="w-3 h-3" /> Upload
+                    <Upload className="w-3 h-3" /> {t("maps.upload")}
                   </button>
                 </div>
               </div>
@@ -229,7 +231,7 @@ export default function MapsPage() {
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-950 border border-dashed border-slate-700 rounded-lg cursor-pointer hover:border-indigo-500 transition-colors text-slate-400 text-sm">
                     <Upload className="w-4 h-4" />
-                    {badgeUploading ? "Uploading..." : currentMap.badgeUrl ? "File uploaded ✓" : "Choose file"}
+                    {badgeUploading ? t("maps.uploading") : currentMap.badgeUrl ? t("maps.file_uploaded") : t("maps.choose_file")}
                     <input type="file" accept="image/*" className="hidden" onChange={handleBadgeFile} disabled={badgeUploading} />
                   </label>
                 </div>
@@ -249,13 +251,13 @@ export default function MapsPage() {
                 onChange={e => setCurrentMap({...currentMap, isCommunity: e.target.checked})}
                 className="w-4 h-4 text-indigo-600 rounded bg-slate-950 border-slate-800"
               />
-              <label htmlFor="isCommunity" className="text-sm font-medium text-slate-300">Workshop / Community Map?</label>
+              <label htmlFor="isCommunity" className="text-sm font-medium text-slate-300">{t("maps.is_community")}</label>
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">Cancel</button>
+              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">{t("maps.cancel")}</button>
               <button type="submit" className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg" disabled={bgUploading || badgeUploading}>
-                {bgUploading || badgeUploading ? "Uploading..." : "Save"}
+                {bgUploading || badgeUploading ? t("maps.uploading") : t("maps.save")}
               </button>
             </div>
           </form>
@@ -272,7 +274,7 @@ export default function MapsPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
               <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded text-xs">
                 {map.isCommunity ? <Globe className="w-3 h-3 text-blue-400" /> : <Shield className="w-3 h-3 text-yellow-400" />}
-                {map.isCommunity ? 'Workshop' : 'Official'}
+                {map.isCommunity ? t("maps.workshop") : t("maps.official")}
               </div>
               {map.badgeUrl && (
                 <img src={map.badgeUrl} alt={`${map.displayName} badge`} className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
@@ -292,7 +294,7 @@ export default function MapsPage() {
         ))}
         {maps.length === 0 && !isEditing && (
           <div className="col-span-full text-center py-12 text-slate-500">
-            No maps registered. Add one by clicking the button above.
+            {t("maps.no_maps")}
           </div>
         )}
       </div>

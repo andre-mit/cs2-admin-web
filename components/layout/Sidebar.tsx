@@ -39,7 +39,7 @@ export default function Sidebar() {
           return (
             <Link
               key={item.key}
-              href={item.href}
+              href={`/${locale}${item.href}`}
               className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <Icon className="w-5 h-5 text-slate-400" />

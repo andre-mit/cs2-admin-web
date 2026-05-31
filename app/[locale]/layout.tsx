@@ -18,19 +18,28 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from "@/components/Providers";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { getDictionary } from "@/lib/i18n";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
+  const { locale } = await params;
+  const dictionary = await getDictionary(locale);
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-950 text-slate-50`}
       >
         <Providers>
-          {children}
+          <I18nProvider locale={locale} dictionary={dictionary}>
+            {children}
+          </I18nProvider>
         </Providers>
       </body>
     </html>
