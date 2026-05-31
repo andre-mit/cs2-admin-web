@@ -48,10 +48,11 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 ## Next Steps (Suggested Improvements)
 
+- **Map Enhancements:** Implement the ability to select `game_mode` for each map (allowing multiple modes per map) and add a "favorite" functionality.
 - **Componentization:** Extract modals/forms from main pages (e.g., `maps/page.tsx`) into reusable components to improve code readability.
 - **Global State Management:** Add libraries like `Zustand` to globally manage the active lobby and system notifications.
 - **Error Handling:** Implement a custom hook for requests that automatically triggers error toasts if the API fails (e.g., 500 server errors or 400 validation errors).
-- **Protected Routes:** Use Next.js `middleware.ts` to globally protect all routes under `/dashboard`, avoiding conditional checks on every page.
+- **Protected Routes:** Use Next.js `proxy.ts` (formerly `middleware.ts`) to globally protect all routes under `/dashboard`, avoiding conditional checks on every page.
 
 ## Coding Standards
 

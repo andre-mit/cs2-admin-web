@@ -4,23 +4,32 @@ import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Edit, Trash2, Map, Globe, Shield, Upload, Link } from "lucide-react";
 import { mapsService, GameMap } from "@/services/mapsService";
-import { swrFetcher, API_BASE_URL } from "@/services/apiClient";
+import { swrFetcher, API_BASE_URL, getAuthToken } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
 
 type ImageMode = "url" | "upload";
 
 async function uploadToS3(file: File, mapName: string, imageType: "background" | "badge"): Promise<string> {
   const sanitizedMap = mapName.trim() || "temp";
+  const token = await getAuthToken();
+  const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
+
   try {
     const res = await fetch(
-      `${API_BASE_URL}/api/v1/uploads/presigned-url?fileName=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}&mapName=${encodeURIComponent(sanitizedMap)}&imageType=${encodeURIComponent(imageType)}`
+      `${API_BASE_URL}/api/v1/uploads/presigned-url?fileName=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}&mapName=${encodeURIComponent(sanitizedMap)}&imageType=${encodeURIComponent(imageType)}`,
+      { headers: authHeaders }
     );
+    
+    if (!res.ok) {
+        throw new Error(`Failed to get presigned URL: ${res.status}`);
+    }
+    
     const data = await res.json() as { uploadUrl: string; publicUrl: string };
 
     await fetch(data.uploadUrl, {
       method: "PUT",
       body: file,
-      headers: { "Content-Type": file.type }
+      headers: { "Content-Type": file.type } // NOTE: do not send auth headers to S3 presigned URL
     });
 
     return data.publicUrl;
@@ -34,7 +43,8 @@ async function uploadToS3(file: File, mapName: string, imageType: "background" |
       `${API_BASE_URL}/api/v1/uploads?mapName=${encodeURIComponent(sanitizedMap)}&imageType=${encodeURIComponent(imageType)}`,
       {
         method: "POST",
-        body: formData
+        body: formData,
+        headers: authHeaders
       }
     );
 
@@ -264,39 +274,88 @@ export default function MapsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {maps.map(map => (
-          <div key={map.id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg group">
-            <div 
-              className="h-32 bg-cover bg-center border-b border-slate-800 relative"
-              style={{ backgroundImage: `url(${map.imageUrl})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
-              <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded text-xs">
-                {map.isCommunity ? <Globe className="w-3 h-3 text-blue-400" /> : <Shield className="w-3 h-3 text-yellow-400" />}
-                {map.isCommunity ? t("maps.workshop") : t("maps.official")}
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-slate-200 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-yellow-400" />
+            {t("maps.official_maps") || "Official Maps"}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {maps.filter(m => !m.isCommunity).map(map => (
+              <div key={map.id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg group">
+                <div 
+                  className="h-32 bg-cover bg-center border-b border-slate-800 relative"
+                  style={{ backgroundImage: `url(${map.imageUrl})` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded text-xs">
+                    <Shield className="w-3 h-3 text-yellow-400" />
+                    {t("maps.official")}
+                  </div>
+                  {map.badgeUrl && (
+                    <img src={map.badgeUrl} alt={`${map.displayName} badge`} className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
+                  )}
+                </div>
+                
+                <div className="p-4 relative">
+                  <h3 className="font-bold text-lg">{map.displayName}</h3>
+                  <p className="text-slate-400 text-sm font-mono">{map.identifier}</p>
+                  
+                  <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4">
+                    <button onClick={() => handleEdit(map)} className="p-2 bg-slate-800 hover:bg-indigo-600 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
+                    <button onClick={() => deleteMap(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
               </div>
-              {map.badgeUrl && (
-                <img src={map.badgeUrl} alt={`${map.displayName} badge`} className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
-              )}
-            </div>
-            
-            <div className="p-4 relative">
-              <h3 className="font-bold text-lg">{map.displayName}</h3>
-              <p className="text-slate-400 text-sm font-mono">{map.identifier}</p>
-              
-              <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4">
-                <button onClick={() => handleEdit(map)} className="p-2 bg-slate-800 hover:bg-indigo-600 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                <button onClick={() => deleteMap(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+            ))}
+            {maps.filter(m => !m.isCommunity).length === 0 && !isEditing && (
+              <div className="col-span-full text-center py-8 text-slate-500 bg-slate-900/50 rounded-xl border border-dashed border-slate-800">
+                {t("maps.no_maps")}
               </div>
-            </div>
+            )}
           </div>
-        ))}
-        {maps.length === 0 && !isEditing && (
-          <div className="col-span-full text-center py-12 text-slate-500">
-            {t("maps.no_maps")}
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-slate-200 flex items-center gap-2">
+            <Globe className="w-5 h-5 text-blue-400" />
+            {t("maps.community_maps") || "Community Maps"}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {maps.filter(m => m.isCommunity).map(map => (
+              <div key={map.id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg group">
+                <div 
+                  className="h-32 bg-cover bg-center border-b border-slate-800 relative"
+                  style={{ backgroundImage: `url(${map.imageUrl})` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded text-xs">
+                    <Globe className="w-3 h-3 text-blue-400" />
+                    {t("maps.workshop")}
+                  </div>
+                  {map.badgeUrl && (
+                    <img src={map.badgeUrl} alt={`${map.displayName} badge`} className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
+                  )}
+                </div>
+                
+                <div className="p-4 relative">
+                  <h3 className="font-bold text-lg">{map.displayName}</h3>
+                  <p className="text-slate-400 text-sm font-mono">{map.identifier}</p>
+                  
+                  <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4">
+                    <button onClick={() => handleEdit(map)} className="p-2 bg-slate-800 hover:bg-indigo-600 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
+                    <button onClick={() => deleteMap(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {maps.filter(m => m.isCommunity).length === 0 && !isEditing && (
+              <div className="col-span-full text-center py-8 text-slate-500 bg-slate-900/50 rounded-xl border border-dashed border-slate-800">
+                {t("maps.no_maps")}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

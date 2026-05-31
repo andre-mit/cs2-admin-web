@@ -102,23 +102,51 @@ export default function LobbiesAdminPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">{t("lobbies.map_pool")}</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-48 overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950">
-                {maps?.map(m => (
-                  <label key={m.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-900 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600"
-                      checked={selectedMaps.includes(m.isCommunity ? `ws:${m.identifier}` : m.identifier)}
-                      onChange={(e) => {
-                        const mapId = m.isCommunity ? `ws:${m.identifier}` : m.identifier;
-                        if (e.target.checked) setSelectedMaps([...selectedMaps, mapId]);
-                        else setSelectedMaps(selectedMaps.filter(id => id !== mapId));
-                      }}
-                    />
-                    <span className="text-sm truncate" title={m.displayName}>{m.displayName}</span>
-                  </label>
-                ))}
-                {maps?.length === 0 && <span className="text-xs text-slate-500">{t("lobbies.no_maps")}</span>}
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t("maps.official_maps") || "Official Maps"}</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-48 overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950">
+                    {maps?.filter(m => !m.isCommunity).map(m => (
+                      <label key={m.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-900 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600"
+                          checked={selectedMaps.includes(m.identifier)}
+                          onChange={(e) => {
+                            const mapId = m.identifier;
+                            if (e.target.checked) setSelectedMaps([...selectedMaps, mapId]);
+                            else setSelectedMaps(selectedMaps.filter(id => id !== mapId));
+                          }}
+                        />
+                        <span className="text-sm truncate" title={m.displayName}>{m.displayName}</span>
+                      </label>
+                    ))}
+                    {maps?.filter(m => !m.isCommunity).length === 0 && <span className="text-xs text-slate-500">{t("lobbies.no_maps")}</span>}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t("maps.community_maps") || "Community Maps"}</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-48 overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950">
+                    {maps?.filter(m => m.isCommunity).map(m => (
+                      <label key={m.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-900 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600"
+                          checked={selectedMaps.includes(`ws:${m.identifier}`)}
+                          onChange={(e) => {
+                            const mapId = `ws:${m.identifier}`;
+                            if (e.target.checked) setSelectedMaps([...selectedMaps, mapId]);
+                            else setSelectedMaps(selectedMaps.filter(id => id !== mapId));
+                          }}
+                        />
+                        <span className="text-sm truncate" title={m.displayName}>{m.displayName}</span>
+                      </label>
+                    ))}
+                    {maps?.filter(m => m.isCommunity).length === 0 && <span className="text-xs text-slate-500">{t("lobbies.no_maps")}</span>}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4">

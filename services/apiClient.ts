@@ -3,7 +3,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost
 let cachedToken: string | null = null;
 let tokenPromise: Promise<string | null> | null = null;
 
-async function getAuthToken(): Promise<string | null> {
+export async function getAuthToken(): Promise<string | null> {
   if (typeof window === "undefined") {
     // In Server Components, we'd need a different way to get the token if we wanted to call the external API directly.
     return null;

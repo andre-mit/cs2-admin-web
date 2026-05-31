@@ -1,14 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Settings, Sun, Moon, Globe } from "lucide-react";
+import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Globe } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import { useTheme } from "next-themes";
-import { useSyncExternalStore } from "react";
-
-const emptySubscribe = () => () => {};
-const getClientMounted = () => true;
-const getServerMounted = () => false;
 
 const navItems = [
   { key: "dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -22,8 +16,6 @@ const navItems = [
 
 export default function Sidebar() {
   const { t, locale, setLocale } = useI18n();
-  const { theme, setTheme } = useTheme();
-  const mounted = useSyncExternalStore(emptySubscribe, getClientMounted, getServerMounted);
 
   return (
     <aside className="w-64 h-full bg-slate-900 border-r border-slate-800 flex flex-col">
@@ -49,30 +41,14 @@ export default function Sidebar() {
         })}
       </nav>
       <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center justify-between gap-2">
-          {/* Theme Toggle */}
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-            title={t("sidebar.theme_" + (theme === "dark" ? "light" : "dark"))}
-          >
-            {mounted && theme === "dark" ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-          </button>
-
-          {/* Language Toggle */}
-          <button
-            onClick={() => setLocale(locale === "pt" ? "en" : "pt")}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors uppercase"
-            title={t("sidebar.language")}
-          >
-            <Globe className="w-4 h-4" />
-            {locale}
-          </button>
-        </div>
+        <button
+          onClick={() => setLocale(locale === "pt" ? "en" : "pt")}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors uppercase"
+          title={t("sidebar.language")}
+        >
+          <Globe className="w-4 h-4" />
+          {locale}
+        </button>
       </div>
     </aside>
   );
