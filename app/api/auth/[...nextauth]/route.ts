@@ -14,7 +14,10 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
   return {
     providers: [
       SteamProvider(
-        req || ({ headers: { host: new URL(process.env.NEXTAUTH_URL || "http://localhost:3000").host } } as unknown as Request),
+        req || ({ 
+          url: process.env.NEXTAUTH_URL || "http://localhost:3000",
+          headers: { host: new URL(process.env.NEXTAUTH_URL || "http://localhost:3000").host } 
+        } as unknown as Request),
         {
           clientSecret: process.env.STEAM_SECRET!,
           callbackUrl: `${process.env.NEXTAUTH_URL}/api/auth/callback/steam`,
@@ -46,7 +49,7 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
 export const authOptions = getAuthOptions();
 
 const handler = async (req: NextRequest, ctx: { params: Promise<{ nextauth: string[] }> }) => {
-  return NextAuth(req, ctx, authOptions);
+  return NextAuth(req, ctx, getAuthOptions(req));
 };
 
 export { handler as GET, handler as POST };
