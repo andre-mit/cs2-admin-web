@@ -3,17 +3,8 @@
 import { Server, Plus, X, Wifi, WifiOff, Loader2 } from "lucide-react";
 import useSWR from "swr";
 import { useState } from "react";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-interface CS2Server {
-  id: number;
-  ipString: string;
-  port: number;
-  rconPassword?: string;
-  displayName?: string;
-  inUse: boolean;
-}
+import { serversService, CS2Server } from "@/services/serversService";
+import { swrFetcher } from "@/services/apiClient";
 
 interface ServerStatus {
   loading: boolean;
@@ -21,7 +12,7 @@ interface ServerStatus {
 }
 
 export default function ServersPage() {
-  const { data: servers, error, isLoading, mutate } = useSWR<CS2Server[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/servers`, fetcher);
+  const { data: servers, error, isLoading, mutate } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ displayName: "", ipString: "", port: 27015, rconPassword: "" });
@@ -33,17 +24,10 @@ export default function ServersPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/servers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, inUse: false })
-      });
-
-      if (res.ok) {
-        setFormData({ displayName: "", ipString: "", port: 27015, rconPassword: "" });
-        setIsModalOpen(false);
-        mutate();
-      }
+      await serversService.create({ ...formData, inUse: false } as Partial<CS2Server>);
+      setFormData({ displayName: "", ipString: "", port: 27015, rconPassword: "" });
+      setIsModalOpen(false);
+      mutate();
     } catch (err) {
       console.error("Failed to create server:", err);
     } finally {
@@ -54,9 +38,8 @@ export default function ServersPage() {
   const testRcon = async (serverId: number) => {
     setStatusMap(prev => ({ ...prev, [serverId]: { loading: true, online: null } }));
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/servers/${serverId}/status`);
-      const data = await res.json() as { online: boolean };
-      setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: data.online } }));
+      const data = await serversService.getStatus(serverId);
+      setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: data.isOnline } }));
     } catch {
       setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: false } }));
     }

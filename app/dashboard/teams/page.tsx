@@ -3,19 +3,11 @@
 import { Users, Plus, Search, X, Edit2, Trash2 } from "lucide-react";
 import useSWR from "swr";
 import { useState } from "react";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-interface Team {
-  id: number;
-  name: string;
-  flag?: string;
-  logo?: string;
-  playerSteamIds?: string;
-}
+import { teamsService, Team } from "@/services/teamsService";
+import { swrFetcher } from "@/services/apiClient";
 
 export default function TeamsPage() {
-  const { data: teams, error, isLoading, mutate } = useSWR<Team[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams`, fetcher);
+  const { data: teams, error, isLoading, mutate } = useSWR<Team[]>("/api/v1/teams", swrFetcher);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,12 +41,8 @@ export default function TeamsPage() {
     if (!confirm("Are you sure you want to delete this team?")) return;
     
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        mutate();
-      }
+      await teamsService.delete(id);
+      mutate();
     } catch (err) {
       console.error(err);
     }
@@ -75,22 +63,14 @@ export default function TeamsPage() {
     };
 
     try {
-      const url = editingTeam 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams/${editingTeam.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams`;
-        
-      const method = editingTeam ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        setIsModalOpen(false);
-        mutate();
+      if (editingTeam) {
+        await teamsService.update(editingTeam.id, payload);
+      } else {
+        await teamsService.create(payload);
       }
+
+      setIsModalOpen(false);
+      mutate();
     } catch (err) {
       console.error(err);
     } finally {

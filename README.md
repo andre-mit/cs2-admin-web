@@ -51,3 +51,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 - **Global State Management:** Add libraries like `Zustand` to globally manage the active lobby and system notifications.
 - **Error Handling:** Implement a custom hook for requests that automatically triggers error toasts if the API fails (e.g., 500 server errors or 400 validation errors).
 - **Protected Routes:** Use Next.js `middleware.ts` to globally protect all routes under `/dashboard`, avoiding conditional checks on every page.
+
+## Coding Standards
+
+- **Clean Code & Comments:** Never add irrelevant, generic, or obvious comments to the code (e.g., `{/* Header */}`, `// Connect to SignalR`, `// Fetch data`). Comments should only be used to explain *why* complex or non-obvious logic was implemented, never *what* the code is doing. Make the code expressive enough to document itself.

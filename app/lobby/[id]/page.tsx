@@ -5,34 +5,9 @@ import { useSession, signIn } from "next-auth/react";
 import * as signalR from "@microsoft/signalr";
 import { Swords, Ban, CheckCircle, Plus } from "lucide-react";
 import { useParams } from "next/navigation";
-
-interface LobbyPlayer {
-  steamId: string;
-  name: string;
-  avatarUrl: string;
-  teamDesignation: number;
-  isCaptain: boolean;
-}
-
-interface Lobby {
-  id: number;
-  title: string;
-  state: string; // Waiting, Veto, Ready
-  maxMaps: number;
-  mapPool: string;
-  vetoHistory: string;
-  selectedMaps: string;
-  players: LobbyPlayer[];
-}
-
-interface GameMap {
-  id: number;
-  displayName: string;
-  identifier: string;
-  isCommunity: boolean;
-  imageUrl: string;
-  badgeUrl: string | null;
-}
+import { API_BASE_URL } from "@/services/apiClient";
+import { lobbiesService, Lobby, LobbyPlayer } from "@/services/lobbiesService";
+import { mapsService, GameMap } from "@/services/mapsService";
 
 export default function LobbyPage() {
   const { data: session, status } = useSession();
@@ -46,23 +21,19 @@ export default function LobbyPage() {
   const steamId = session?.user?.steamId;
   const isAdmin = true; // For now, we assume user can see admin buttons if they have a session. Real app would check ADMIN_STEAM_IDS
 
-  // Fetch initial lobby state and maps
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/${lobbyId}`)
-      .then(res => res.json())
-      .then(data => setLobby(data))
+    lobbiesService.getById(parseInt(lobbyId))
+      .then(data => setLobby(data as unknown as Lobby))
       .catch(console.error);
       
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/maps`)
-      .then(res => res.json())
+    mapsService.getAll()
       .then(data => setMaps(data))
       .catch(console.error);
   }, [lobbyId]);
 
-  // Connect to SignalR
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${process.env.NEXT_PUBLIC_API_URL}/hubs/lobby`)
+      .withUrl(`${API_BASE_URL}/hubs/lobby`)
       .withAutomaticReconnect()
       .build();
 
@@ -85,40 +56,28 @@ export default function LobbyPage() {
   const joinTeam = async (teamId: number) => {
     if (!session?.user) return;
     
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/${lobbyId}/join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        steamId,
-        name: session.user.name || "Player",
-        avatarUrl: session.user.image || "",
-        teamDesignation: teamId
-      })
+    await lobbiesService.join(parseInt(lobbyId), {
+      steamId,
+      name: session.user.name || "Player",
+      avatar: session.user.image || "",
+      teamDesignation: teamId
     });
   };
 
   const randomizeTeams = async () => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/${lobbyId}/randomize`, { method: "POST" });
+    await lobbiesService.randomizeTeams(parseInt(lobbyId));
   };
 
   const changeState = async (newState: string) => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/${lobbyId}/state`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state: newState })
-    });
+    await lobbiesService.updateState(parseInt(lobbyId), newState);
   };
 
   const generateMatch = async () => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/${lobbyId}/generate`, { method: "POST" });
+    await lobbiesService.generateMatch(parseInt(lobbyId));
   };
 
   const vetoMap = async (map: string, action: string) => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/${lobbyId}/veto`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ map, action })
-    });
+    await lobbiesService.vetoMap(parseInt(lobbyId), map, action);
   };
 
   if (status === "loading" || !lobby) return <div className="p-10 text-white text-center">Loading Lobby...</div>;
@@ -141,7 +100,6 @@ export default function LobbyPage() {
   const vetoHistory = JSON.parse(lobby.vetoHistory || "[]") as string[];
   const selectedMaps = JSON.parse(lobby.selectedMaps || "[]") as string[];
 
-  // Using the map pool and veto history derived variables
   const getVetoState = () => {
     if (!lobby || lobby.state !== "Veto") return { team: 0, action: 'none' };
     
@@ -173,7 +131,6 @@ export default function LobbyPage() {
     <div className="min-h-screen bg-slate-950 text-slate-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         
-        {/* Header */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl flex justify-between items-center shadow-lg">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -284,9 +241,9 @@ export default function LobbyPage() {
             <h2 className="text-xl font-bold mb-4 text-green-400 flex items-center gap-2"><CheckCircle /> Match is Ready!</h2>
             <p className="mb-4 text-slate-300">The server administrator can now execute the MatchZy config URL on the server to start the match.</p>
             <div className="bg-slate-950 p-4 rounded-lg flex items-center justify-between border border-slate-800">
-              <code className="text-indigo-300">matchzy_loadmatch_url {process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/{lobbyId}/config.json</code>
+              <code className="text-indigo-300">matchzy_loadmatch_url {API_BASE_URL}/api/v1/lobbies/{lobbyId}/config.json</code>
               <button 
-                onClick={() => navigator.clipboard.writeText(`matchzy_loadmatch_url ${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies/${lobbyId}/config.json`)}
+                onClick={() => navigator.clipboard.writeText(`matchzy_loadmatch_url ${API_BASE_URL}/api/v1/lobbies/${lobbyId}/config.json`)}
                 className="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-sm"
               >
                 Copy
@@ -295,10 +252,8 @@ export default function LobbyPage() {
           </div>
         )}
 
-        {/* Players Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Team 1 */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
             <div className="bg-indigo-900/40 p-4 border-b border-indigo-900/50 flex justify-between items-center">
               <h2 className="font-bold text-indigo-300">Team A</h2>
@@ -307,7 +262,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {team1.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <img src={p.avatar || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
                   <span className="font-medium truncate">{p.name}</span>
                 </div>
               ))}
@@ -319,7 +274,6 @@ export default function LobbyPage() {
             </div>
           </div>
 
-          {/* Spectators */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
             <div className="bg-slate-800/50 p-4 border-b border-slate-800 flex justify-between items-center">
               <h2 className="font-bold text-slate-300">Spectators</h2>
@@ -328,7 +282,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {specs.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <img src={p.avatar || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
                   <span className="font-medium truncate">{p.name}</span>
                 </div>
               ))}
@@ -340,7 +294,6 @@ export default function LobbyPage() {
             </div>
           </div>
 
-          {/* Team 2 */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
             <div className="bg-orange-900/40 p-4 border-b border-orange-900/50 flex justify-between items-center">
               <h2 className="font-bold text-orange-300">Team B</h2>
@@ -349,7 +302,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {team2.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <img src={p.avatar || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
                   <span className="font-medium truncate">{p.name}</span>
                 </div>
               ))}

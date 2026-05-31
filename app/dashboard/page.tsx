@@ -2,21 +2,9 @@
 
 import { Trophy, Users, Server, Shield, Activity } from "lucide-react";
 import useSWR from "swr";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-interface Team {
-  id: number;
-  name: string;
-}
-
-interface CS2Server {
-  id: number;
-  ipString: string;
-  port: number;
-  displayName?: string;
-  inUse: boolean;
-}
+import { swrFetcher } from "@/services/apiClient";
+import { Team } from "@/services/teamsService";
+import { CS2Server } from "@/services/serversService";
 
 interface Match {
   id: number;
@@ -24,9 +12,9 @@ interface Match {
 }
 
 export default function Home() {
-  const { data: teams } = useSWR<Team[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams`, fetcher);
-  const { data: servers } = useSWR<CS2Server[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/servers`, fetcher);
-  const { data: matches } = useSWR<Match[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/matches`, fetcher);
+  const { data: teams } = useSWR<Team[]>("/api/v1/teams", swrFetcher);
+  const { data: servers } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
+  const { data: matches } = useSWR<Match[]>("/api/v1/matches", swrFetcher);
 
   const activeMatches = matches ? matches.filter(m => m.status === "Live" || m.status === "Pending").length : 0;
   const onlineServers = servers ? servers.filter(s => s.inUse).length : 0;

@@ -3,28 +3,13 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Users, Swords, Play } from "lucide-react";
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-interface Lobby {
-  id: number;
-  title: string;
-  state: string;
-  maxMaps: number;
-  players: { steamId: string; name: string }[];
-}
-
-interface GameMap {
-  id: number;
-  displayName: string;
-  identifier: string;
-  isCommunity: boolean;
-  imageUrl: string;
-}
+import { lobbiesService, Lobby } from "@/services/lobbiesService";
+import { GameMap } from "@/services/mapsService";
+import { swrFetcher } from "@/services/apiClient";
 
 export default function LobbiesAdminPage() {
-  const { data: lobbies, mutate } = useSWR<Lobby[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies`, fetcher);
-  const { data: maps } = useSWR<GameMap[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/maps`, fetcher);
+  const { data: lobbies, mutate } = useSWR<Lobby[]>("/api/v1/lobbies", swrFetcher);
+  const { data: maps } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const [isCreating, setIsCreating] = useState(false);
   
   const [title, setTitle] = useState("");
@@ -38,15 +23,13 @@ export default function LobbiesAdminPage() {
       alert("You must select at least 7 maps for standard tournament vetoes.");
       return;
     }
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/lobbies`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        maxMaps: parseInt(maxMaps),
-        mapSidesMode,
-        mapPool: selectedMaps.join(",")
-      })
+    await lobbiesService.create({
+      title,
+      maxMaps: parseInt(maxMaps),
+      state: "WAITING", // Initial state
+      // @ts-ignore mapSidesMode & mapPool are extended lobby props in API
+      mapSidesMode,
+      mapPool: selectedMaps.join(",")
     });
     setIsCreating(false);
     mutate();

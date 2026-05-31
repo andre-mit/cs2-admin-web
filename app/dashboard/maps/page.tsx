@@ -3,17 +3,8 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Edit, Trash2, Map, Globe, Shield, Upload, Link } from "lucide-react";
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-interface GameMap {
-  id: number;
-  displayName: string;
-  identifier: string;
-  isCommunity: boolean;
-  imageUrl: string;
-  badgeUrl: string | null;
-}
+import { mapsService, GameMap } from "@/services/mapsService";
+import { swrFetcher, API_BASE_URL } from "@/services/apiClient";
 
 type ImageMode = "url" | "upload";
 
@@ -21,7 +12,7 @@ async function uploadToS3(file: File, mapName: string, imageType: "background" |
   const sanitizedMap = mapName.trim() || "temp";
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/uploads/presigned-url?fileName=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}&mapName=${encodeURIComponent(sanitizedMap)}&imageType=${encodeURIComponent(imageType)}`
+      `${API_BASE_URL}/api/v1/uploads/presigned-url?fileName=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}&mapName=${encodeURIComponent(sanitizedMap)}&imageType=${encodeURIComponent(imageType)}`
     );
     const data = await res.json() as { uploadUrl: string; publicUrl: string };
 
@@ -39,7 +30,7 @@ async function uploadToS3(file: File, mapName: string, imageType: "background" |
     formData.append("file", file);
 
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/uploads?mapName=${encodeURIComponent(sanitizedMap)}&imageType=${encodeURIComponent(imageType)}`,
+      `${API_BASE_URL}/api/v1/uploads?mapName=${encodeURIComponent(sanitizedMap)}&imageType=${encodeURIComponent(imageType)}`,
       {
         method: "POST",
         body: formData
@@ -57,7 +48,7 @@ async function uploadToS3(file: File, mapName: string, imageType: "background" |
 }
 
 export default function MapsPage() {
-  const { data: mapsData, mutate: fetchMaps } = useSWR<GameMap[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/maps`, fetcher);
+  const { data: mapsData, mutate: fetchMaps } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const maps = mapsData || [];
 
   const [isEditing, setIsEditing] = useState(false);
@@ -96,16 +87,17 @@ export default function MapsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const method = currentMap.id ? "PUT" : "POST";
-    const url = currentMap.id 
-      ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/maps/${currentMap.id}`
-      : `${process.env.NEXT_PUBLIC_API_URL}/api/v1/maps`;
-
-    await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(currentMap)
-    });
+    try {
+      if (currentMap.id) {
+        await mapsService.update(currentMap.id, currentMap);
+      } else {
+        await mapsService.create(currentMap);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save map.");
+      return;
+    }
 
     setIsEditing(false);
     setCurrentMap({ displayName: "", identifier: "", isCommunity: false, imageUrl: "", badgeUrl: null });
@@ -115,7 +107,12 @@ export default function MapsPage() {
   const deleteMap = async (id: number) => {
     if (!confirm("Are you sure you want to delete this map?")) return;
     
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/maps/${id}`, { method: "DELETE" });
+    try {
+      await mapsService.delete(id);
+    } catch(e) {
+      console.error(e);
+      alert("Failed to delete map.");
+    }
     fetchMaps();
   };
 
@@ -173,7 +170,6 @@ export default function MapsPage() {
               </div>
             </div>
 
-            {/* Background Image */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-sm font-medium text-slate-400">Background Image</label>
