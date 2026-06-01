@@ -12,7 +12,7 @@ type ImageMode = "url" | "upload";
 async function uploadToS3(file: File, mapName: string, imageType: "background" | "badge"): Promise<string> {
   const sanitizedMap = mapName.trim() || "temp";
   const token = await getAuthToken();
-  const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
+  const authHeaders: Record<string, string> = token ? { "Authorization": `Bearer ${token}` } : {};
 
   try {
     const res = await fetch(
