@@ -66,12 +66,20 @@ export default function LobbyPage() {
   const joinTeam = async (teamId: number) => {
     if (!session?.user) return;
 
-    await lobbiesService.join(parseInt(lobbyId), {
-      steamId,
-      name: session.user.name || "Player",
-      avatar: session.user.image || "",
-      teamDesignation: teamId
-    });
+    try {
+      const updatedLobby = await lobbiesService.join(parseInt(lobbyId), {
+        steamId,
+        name: session.user.name || "Player",
+        avatarUrl: session.user.image || "",
+        teamDesignation: teamId
+      });
+      if (updatedLobby) {
+        setLobby(updatedLobby);
+      }
+    } catch (err: any) {
+      console.error("Error joining team:", err);
+      alert("Failed to join team: " + err.message);
+    }
   };
 
   const randomizeTeams = async () => {
@@ -272,7 +280,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {team1.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatar || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
                   <span className="font-medium truncate">{p.name}</span>
                 </div>
               ))}
@@ -292,7 +300,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {specs.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatar || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
                   <span className="font-medium truncate">{p.name}</span>
                 </div>
               ))}
@@ -312,7 +320,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {team2.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatar || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
                   <span className="font-medium truncate">{p.name}</span>
                 </div>
               ))}

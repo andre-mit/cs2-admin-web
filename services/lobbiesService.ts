@@ -4,7 +4,7 @@ export interface LobbyPlayer {
   id: number;
   steamId: string;
   name: string;
-  avatar?: string;
+  avatarUrl?: string;
   teamDesignation: number;
   isCaptain: boolean;
 }
@@ -38,7 +38,7 @@ export const lobbiesService = {
   delete: (id: number) => fetchApi<void>(`/api/v1/lobbies/${id}`, {
     method: "DELETE",
   }),
-  join: (id: number, playerData: Partial<LobbyPlayer>) => fetchApi<void>(`/api/v1/lobbies/${id}/join`, {
+  join: (id: number, playerData: Partial<LobbyPlayer>) => fetchApi<Lobby>(`/api/v1/lobbies/${id}/join`, {
     method: "POST",
     body: JSON.stringify(playerData),
   }),
