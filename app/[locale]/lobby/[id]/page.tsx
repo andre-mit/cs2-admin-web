@@ -158,7 +158,7 @@ export default function LobbyPage() {
             <p className="text-slate-400 mt-1">{t("lobby.best_of")} {lobby.maxMaps} • {t("lobby.status")}: <span className="text-indigo-400 font-bold uppercase">{lobby.state}</span></p>
           </div>
           <div className="flex gap-3">
-            {isAdmin && lobby.state === "Waiting" && (
+            {isAdmin && lobby.state?.toLowerCase() === "waiting" && (
               <>
                 <button onClick={randomizeTeams} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium">{t("lobby.randomize_teams")}</button>
                 <button
@@ -170,7 +170,7 @@ export default function LobbyPage() {
                 </button>
               </>
             )}
-            {isAdmin && lobby.state === "Veto" && (
+            {isAdmin && lobby.state?.toLowerCase() === "veto" && (
               <>
                 <button onClick={() => changeState("Waiting")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium text-slate-300">{t("lobby.cancel_veto")}</button>
                 <button onClick={generateMatch} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium">{t("lobby.finish_veto")}</button>
@@ -179,7 +179,7 @@ export default function LobbyPage() {
           </div>
         </div>
 
-        {lobby.state === "Veto" && (
+        {lobby.state?.toLowerCase() === "veto" && (
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Ban className="text-red-500" /> {t("lobby.veto_phase")}</h2>
 
@@ -254,7 +254,7 @@ export default function LobbyPage() {
           </div>
         )}
 
-        {lobby.state === "Ready" && (
+        {lobby.state?.toLowerCase() === "ready" && (
           <div className="bg-green-900/20 border border-green-900/50 p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-bold mb-4 text-green-400 flex items-center gap-2"><CheckCircle /> {t("lobby.match_ready")}</h2>
             <p className="mb-4 text-slate-300">{t("lobby.match_ready_desc")}</p>
@@ -281,10 +281,12 @@ export default function LobbyPage() {
               {team1.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
                   <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
-                  <span className="font-medium truncate">{p.name}</span>
+                  <span className={`font-medium truncate ${p.steamId === steamId ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : ''}`}>
+                    {p.name} {p.steamId === steamId && " (You)"}
+                  </span>
                 </div>
               ))}
-              {team1.length < 5 && lobby.state === "Waiting" && (
+              {team1.length < 5 && lobby.state?.toLowerCase() === "waiting" && (
                 <button onClick={() => joinTeam(1)} className="w-full p-4 border-2 border-dashed border-slate-700 hover:border-indigo-500 hover:bg-indigo-900/20 rounded-lg text-slate-400 transition-colors flex items-center justify-center gap-2">
                   <Plus className="w-4 h-4" /> {t("lobby.join_team_a")}
                 </button>
@@ -301,10 +303,12 @@ export default function LobbyPage() {
               {specs.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
                   <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
-                  <span className="font-medium truncate">{p.name}</span>
+                  <span className={`font-medium truncate ${p.steamId === steamId ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : ''}`}>
+                    {p.name} {p.steamId === steamId && " (You)"}
+                  </span>
                 </div>
               ))}
-              {lobby.state === "Waiting" && (
+              {lobby.state?.toLowerCase() === "waiting" && (
                 <button onClick={() => joinTeam(0)} className="w-full p-4 border-2 border-dashed border-slate-700 hover:border-slate-500 hover:bg-slate-800/50 rounded-lg text-slate-400 transition-colors flex items-center justify-center gap-2">
                   <Plus className="w-4 h-4" /> {t("lobby.join_specs")}
                 </button>
@@ -321,10 +325,12 @@ export default function LobbyPage() {
               {team2.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
                   <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
-                  <span className="font-medium truncate">{p.name}</span>
+                  <span className={`font-medium truncate ${p.steamId === steamId ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : ''}`}>
+                    {p.name} {p.steamId === steamId && " (You)"}
+                  </span>
                 </div>
               ))}
-              {team2.length < 5 && lobby.state === "Waiting" && (
+              {team2.length < 5 && lobby.state?.toLowerCase() === "waiting" && (
                 <button onClick={() => joinTeam(2)} className="w-full p-4 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-orange-900/20 rounded-lg text-slate-400 transition-colors flex items-center justify-center gap-2">
                   <Plus className="w-4 h-4" /> {t("lobby.join_team_b")}
                 </button>
