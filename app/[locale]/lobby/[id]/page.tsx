@@ -9,6 +9,7 @@ import { API_BASE_URL } from "@/services/apiClient";
 import { lobbiesService, Lobby, LobbyPlayer } from "@/services/lobbiesService";
 import { mapsService, GameMap } from "@/services/mapsService";
 import { useI18n } from "@/contexts/I18nContext";
+import Image from "next/image";
 
 export default function LobbyPage() {
   const { t } = useI18n();
@@ -76,9 +77,10 @@ export default function LobbyPage() {
       if (updatedLobby) {
         setLobby(updatedLobby);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error joining team:", err);
-      alert("Failed to join team: " + err.message);
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      alert("Failed to join team: " + errorMessage);
     }
   };
 
@@ -236,7 +238,7 @@ export default function LobbyPage() {
                     style={{ backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.7) 0%, rgba(15, 23, 42, 0.95) 100%), url(${mapImage})` }}
                   >
                     {mapBadge && (
-                      <img src={mapBadge} alt={cleanMapName} className="absolute top-1.5 right-1.5 h-8 w-8 object-contain drop-shadow-lg" />
+                      <Image src={mapBadge} alt={cleanMapName} width={32} height={32} className="absolute top-1.5 right-1.5 object-contain drop-shadow-lg" unoptimized />
                     )}
                     <span className="font-extrabold tracking-wider text-sm mt-2 text-white drop-shadow-md">{cleanMapName}</span>
 
@@ -280,7 +282,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {team1.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <Image src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} width={32} height={32} className="rounded" alt="avatar" unoptimized />
                   <span className={`font-medium truncate ${p.steamId === steamId ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : ''}`}>
                     {p.name} {p.steamId === steamId && " (You)"}
                   </span>
@@ -302,7 +304,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {specs.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <Image src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} width={32} height={32} className="rounded" alt="avatar" unoptimized />
                   <span className={`font-medium truncate ${p.steamId === steamId ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : ''}`}>
                     {p.name} {p.steamId === steamId && " (You)"}
                   </span>
@@ -324,7 +326,7 @@ export default function LobbyPage() {
             <div className="p-2 min-h-[300px]">
               {team2.map(p => (
                 <div key={p.steamId} className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg mb-2 border border-slate-800">
-                  <img src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} className="w-8 h-8 rounded" alt="avatar" />
+                  <Image src={p.avatarUrl || `https://ui-avatars.com/api/?name=${p.name}`} width={32} height={32} className="rounded" alt="avatar" unoptimized />
                   <span className={`font-medium truncate ${p.steamId === steamId ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : ''}`}>
                     {p.name} {p.steamId === steamId && " (You)"}
                   </span>
