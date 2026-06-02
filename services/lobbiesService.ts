@@ -46,7 +46,7 @@ export const lobbiesService = {
     method: "POST",
   }),
   updateState: (id: number, state: string) => fetchApi<void>(`/api/v1/lobbies/${id}/state`, {
-    method: "PUT",
+    method: "POST",
     body: JSON.stringify({ state }),
   }),
   generateMatch: (id: number) => fetchApi<void>(`/api/v1/lobbies/${id}/generate`, {

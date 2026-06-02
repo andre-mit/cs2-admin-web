@@ -100,17 +100,19 @@ export default function LobbyPage() {
     await lobbiesService.vetoMap(parseInt(lobbyId), map, action);
   };
 
-  if (status === "loading" || !lobby) return <div className="p-10 text-white text-center">{t("lobby.loading")}</div>;
+  if (status === "loading") return <div className="p-10 text-white text-center">{t("lobby.loading")}</div>;
 
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <button onClick={() => signIn("steam")} className="px-6 py-3 bg-indigo-600 text-white rounded-lg">
+        <button onClick={() => signIn("steam")} className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
           {t("lobby.login_steam")}
         </button>
       </div>
     );
   }
+
+  if (!lobby) return <div className="p-10 text-white text-center">{t("lobby.loading")}</div>;
 
   const team1 = lobby.players?.filter(p => p.teamDesignation === 1) || [];
   const team2 = lobby.players?.filter(p => p.teamDesignation === 2) || [];
