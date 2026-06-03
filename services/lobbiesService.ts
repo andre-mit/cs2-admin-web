@@ -21,6 +21,8 @@ export interface Lobby {
   mapPool: string;
   vetoHistory: string;
   selectedMaps: string;
+  team1Name?: string;
+  team2Name?: string;
   players: LobbyPlayer[];
 }
 
@@ -55,5 +57,9 @@ export const lobbiesService = {
   vetoMap: (id: number, map: string, action: string) => fetchApi<void>(`/api/v1/lobbies/${id}/veto`, {
     method: "POST",
     body: JSON.stringify({ map, action }),
+  }),
+  updateTeamName: (id: number, teamDesignation: number, name: string) => fetchApi<void>(`/api/v1/lobbies/${id}/teamname`, {
+    method: "PUT",
+    body: JSON.stringify({ teamDesignation, name }),
   })
 };

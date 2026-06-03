@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import * as signalR from "@microsoft/signalr";
-import { Swords, Ban, CheckCircle, Plus } from "lucide-react";
+import { Swords, Ban, CheckCircle, Plus, Pencil, Check, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/services/apiClient";
 import { lobbiesService, Lobby, LobbyPlayer } from "@/services/lobbiesService";
@@ -21,7 +21,10 @@ export default function LobbyPage() {
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [maps, setMaps] = useState<GameMap[]>([]);
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
-
+  const [editingTeam1, setEditingTeam1] = useState(false);
+  const [editingTeam2, setEditingTeam2] = useState(false);
+  const [team1NameInput, setTeam1NameInput] = useState("");
+  const [team2NameInput, setTeam2NameInput] = useState("");
   const steamId = session?.user?.steamId;
   const isAdmin = true; // For now, we assume user can see admin buttons if they have a session. Real app would check ADMIN_STEAM_IDS
 
@@ -117,6 +120,22 @@ export default function LobbyPage() {
   const team1 = lobby.players?.filter(p => p.teamDesignation === 1) || [];
   const team2 = lobby.players?.filter(p => p.teamDesignation === 2) || [];
   const specs = lobby.players?.filter(p => p.teamDesignation === 0) || [];
+
+  const isTeam1Captain = team1.some(p => p.steamId === steamId && p.isCaptain);
+  const isTeam2Captain = team2.some(p => p.steamId === steamId && p.isCaptain);
+  const canEditTeam1 = isAdmin || isTeam1Captain;
+  const canEditTeam2 = isAdmin || isTeam2Captain;
+
+  const handleUpdateTeamName = async (teamDesignation: number, newName: string) => {
+    if (!newName.trim()) return;
+    try {
+      await lobbiesService.updateTeamName(parseInt(lobbyId), teamDesignation, newName.trim());
+      if (teamDesignation === 1) setEditingTeam1(false);
+      if (teamDesignation === 2) setEditingTeam2(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const mapPool = lobby.mapPool.split(",");
   const vetoHistory = JSON.parse(lobby.vetoHistory || "[]") as string[];
@@ -278,8 +297,23 @@ export default function LobbyPage() {
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
             <div className="bg-indigo-900/40 p-4 border-b border-indigo-900/50 flex justify-between items-center">
-              <h2 className="font-bold text-indigo-300">{t("lobby.team_a")}</h2>
-              <span className="text-sm font-medium">{team1.length}/5</span>
+              {editingTeam1 ? (
+                <div className="flex items-center gap-2 w-full mr-4">
+                  <input type="text" maxLength={32} value={team1NameInput} onChange={e => setTeam1NameInput(e.target.value)} className="bg-slate-950 border border-slate-700 text-white px-2 py-1 rounded text-sm w-full outline-none focus:border-indigo-500" autoFocus onKeyDown={e => e.key === 'Enter' && handleUpdateTeamName(1, team1NameInput)} />
+                  <button onClick={() => handleUpdateTeamName(1, team1NameInput)} className="text-green-400 hover:text-green-300"><Check className="w-4 h-4" /></button>
+                  <button onClick={() => setEditingTeam1(false)} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h2 className="font-bold text-indigo-300">{lobby.team1Name || t("lobby.team_a")}</h2>
+                  {canEditTeam1 && (
+                    <button onClick={() => { setTeam1NameInput(lobby.team1Name || t("lobby.team_a")); setEditingTeam1(true); }} className="text-slate-400 hover:text-indigo-300 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+              {!editingTeam1 && <span className="text-sm font-medium">{team1.length}/5</span>}
             </div>
             <div className="p-2 min-h-[300px]">
               {team1.map(p => (
@@ -322,8 +356,23 @@ export default function LobbyPage() {
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
             <div className="bg-orange-900/40 p-4 border-b border-orange-900/50 flex justify-between items-center">
-              <h2 className="font-bold text-orange-300">{t("lobby.team_b")}</h2>
-              <span className="text-sm font-medium">{team2.length}/5</span>
+              {editingTeam2 ? (
+                <div className="flex items-center gap-2 w-full mr-4">
+                  <input type="text" maxLength={32} value={team2NameInput} onChange={e => setTeam2NameInput(e.target.value)} className="bg-slate-950 border border-slate-700 text-white px-2 py-1 rounded text-sm w-full outline-none focus:border-orange-500" autoFocus onKeyDown={e => e.key === 'Enter' && handleUpdateTeamName(2, team2NameInput)} />
+                  <button onClick={() => handleUpdateTeamName(2, team2NameInput)} className="text-green-400 hover:text-green-300"><Check className="w-4 h-4" /></button>
+                  <button onClick={() => setEditingTeam2(false)} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h2 className="font-bold text-orange-300">{lobby.team2Name || t("lobby.team_b")}</h2>
+                  {canEditTeam2 && (
+                    <button onClick={() => { setTeam2NameInput(lobby.team2Name || t("lobby.team_b")); setEditingTeam2(true); }} className="text-slate-400 hover:text-orange-300 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+              {!editingTeam2 && <span className="text-sm font-medium">{team2.length}/5</span>}
             </div>
             <div className="p-2 min-h-[300px]">
               {team2.map(p => (
