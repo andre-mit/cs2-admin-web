@@ -14,21 +14,81 @@ export default function PluginsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [newConfigFilesJson, setNewConfigFilesJson] = useState("[]");
+  const [newConfigFilesJson, setNewConfigFilesJson] = useState(`[
+  {
+    "key": "matchzy_main_cfg",
+    "label": "MatchZy Main Config (CFG)",
+    "relativePath": "cfg/MatchZy/config.cfg",
+    "format": "cfg",
+    "defaultContent": {
+      "matchzy_chat_prefix": "[MatchZy]",
+      "matchzy_admin_chat_prefix": "[MatchZy Admin]",
+      "matchzy_minimum_ready_required": "1",
+      "matchzy_demo_path": "matchzy_demos",
+      "matchzy_stop_command_available": "true",
+      "matchzy_use_casual_commands": "false",
+      "matchzy_allow_force_ready": "true"
+    }
+  },
+  {
+    "key": "matchzy_admins_json",
+    "label": "MatchZy Admins (JSON)",
+    "relativePath": "addons/counterstrikesharp/plugins/MatchZy/admins.json",
+    "format": "json",
+    "defaultContent": {
+      "76561198000000000": "",
+      "76561198000000001": "vip"
+    }
+  }
+]`);
+  const [newFile, setNewFile] = useState<File | null>(null);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
 
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await pluginsService.createPlugin({
+      setIsCreating(true);
+      const created = await pluginsService.createPlugin({
         name: newName,
         description: newDesc,
-        configFilesJson: newConfigFilesJson
+        configFilesJson: newConfigFilesJson,
       });
+
+      if (newFile && created.id) {
+        await pluginsService.uploadPluginZip(created.id, newFile);
+      }
+
       setNewName("");
       setNewDesc("");
-      setNewConfigFilesJson("[]");
+      setNewFile(null);
+      setNewConfigFilesJson(`[
+  {
+    "key": "matchzy_main_cfg",
+    "label": "MatchZy Main Config (CFG)",
+    "relativePath": "cfg/MatchZy/config.cfg",
+    "format": "cfg",
+    "defaultContent": {
+      "matchzy_chat_prefix": "[MatchZy]",
+      "matchzy_admin_chat_prefix": "[MatchZy Admin]",
+      "matchzy_minimum_ready_required": "1",
+      "matchzy_demo_path": "matchzy_demos",
+      "matchzy_stop_command_available": "true",
+      "matchzy_use_casual_commands": "false",
+      "matchzy_allow_force_ready": "true"
+    }
+  },
+  {
+    "key": "matchzy_admins_json",
+    "label": "MatchZy Admins (JSON)",
+    "relativePath": "addons/counterstrikesharp/plugins/MatchZy/admins.json",
+    "format": "json",
+    "defaultContent": {
+      "76561198000000000": "",
+      "76561198000000001": "vip"
+    }
+  }
+]`);
       setIsCreating(false);
       mutate();
     } catch (error) {
@@ -128,6 +188,17 @@ export default function PluginsPage() {
               <p className="text-xs text-slate-500 mt-1">
                 {`Format: [{ "key": "cfg", "label": "CFG", "relativePath": "...", "format": "cfg", "defaultContent": {} }]`}
               </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Plugin ZIP File (.zip)
+              </label>
+              <input
+                type="file"
+                accept=".zip"
+                onChange={(e) => setNewFile(e.target.files?.[0] || null)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+              />
             </div>
             <div className="flex justify-end gap-3">
               <button

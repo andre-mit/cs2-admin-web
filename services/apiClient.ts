@@ -42,13 +42,22 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
 
   const token = await getAuthToken();
 
+  const isFormData = options?.body instanceof FormData;
+
+  const headers: HeadersInit = {
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...options?.headers,
+  };
+
+  if (!isFormData) {
+    (headers as Record<string, string>)["Content-Type"] = (options?.headers as Record<string, string>)?.[
+      "Content-Type"
+    ] || "application/json";
+  }
+
   const defaultOptions: RequestInit = {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
     ...options,
+    headers,
   };
 
   const response = await fetch(url, defaultOptions);

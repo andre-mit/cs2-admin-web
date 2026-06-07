@@ -22,6 +22,43 @@ This is the frontend project for the CS2 (Counter-Strike 2) administration panel
   - Configured interfaces to display servers and lobby details.
 - **Steam Authentication:**
   - Secure and exclusive login via Steam account.
+- **Plugins Management:**
+  - Create and configure plugins with custom config files in JSON or CFG formats.
+  - Dynamically deploy servers with selected plugins and user-overriden configurations.
+
+## Plugin Configuration Example (MatchZy)
+
+When adding a plugin through the web interface, the `Config Files (JSON Array)` field expects an array of configuration objects. Here is an example of how you would configure **MatchZy**:
+
+```json
+[
+  {
+    "key": "matchzy_main_cfg",
+    "label": "MatchZy Main Config (CFG)",
+    "relativePath": "cfg/MatchZy/config.cfg",
+    "format": "cfg",
+    "defaultContent": {
+      "matchzy_chat_prefix": "[MatchZy]",
+      "matchzy_admin_chat_prefix": "[MatchZy Admin]",
+      "matchzy_minimum_ready_required": "1",
+      "matchzy_demo_path": "matchzy_demos",
+      "matchzy_stop_command_available": "true",
+      "matchzy_use_casual_commands": "false",
+      "matchzy_allow_force_ready": "true"
+    }
+  },
+  {
+    "key": "matchzy_admins_json",
+    "label": "MatchZy Admins (JSON)",
+    "relativePath": "addons/counterstrikesharp/plugins/MatchZy/admins.json",
+    "format": "json",
+    "defaultContent": {
+      "76561198000000000": "",
+      "76561198000000001": "vip"
+    }
+  }
+]
+```
 
 ## Setup and Installation
 
