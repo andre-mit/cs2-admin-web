@@ -1,9 +1,9 @@
 "use client";
 
-import { Server, Plus, X, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { Server, Plus, X, Wifi, WifiOff, Loader2, Play, Square, RotateCcw, Trash2, Copy, Zap, Monitor } from "lucide-react";
 import useSWR from "swr";
 import { useState } from "react";
-import { serversService, CS2Server } from "@/services/serversService";
+import { serversService, CS2Server, DynamicServerResult } from "@/services/serversService";
 import { swrFetcher } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
 
@@ -16,9 +16,14 @@ export default function ServersPage() {
   const { t } = useI18n();
   const { data: servers, error, isLoading, mutate } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ displayName: "", ipString: "", port: 27015, rconPassword: "" });
+  const [dynamicFormData, setDynamicFormData] = useState({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10 });
   const [statusMap, setStatusMap] = useState<Record<number, ServerStatus>>({});
+  const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
+  const [lastCreated, setLastCreated] = useState<DynamicServerResult | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const handleCreateServer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +40,56 @@ export default function ServersPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCreateDynamic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const result = await serversService.createDynamic(dynamicFormData);
+      setLastCreated(result);
+      setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10 });
+      setIsDynamicModalOpen(false);
+      mutate();
+    } catch (err) {
+      console.error("Failed to create dynamic server:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleServerAction = async (serverId: number, action: "start" | "stop" | "restart") => {
+    setActionLoading(prev => ({ ...prev, [serverId]: action }));
+    try {
+      if (action === "start") await serversService.startServer(serverId);
+      else if (action === "stop") await serversService.stopServer(serverId);
+      else if (action === "restart") await serversService.restartServer(serverId);
+      mutate();
+    } catch (err) {
+      console.error(`Failed to ${action} server:`, err);
+    } finally {
+      setActionLoading(prev => { const n = { ...prev }; delete n[serverId]; return n; });
+    }
+  };
+
+  const handleDeleteDynamic = async (serverId: number) => {
+    if (!confirm(t("servers.confirm_delete_dynamic"))) return;
+    setActionLoading(prev => ({ ...prev, [serverId]: "delete" }));
+    try {
+      await serversService.deleteDynamic(serverId);
+      mutate();
+    } catch (err) {
+      console.error("Failed to delete dynamic server:", err);
+    } finally {
+      setActionLoading(prev => { const n = { ...prev }; delete n[serverId]; return n; });
+    }
+  };
+
+  const copyConnect = (server: CS2Server) => {
+    const url = `${server.ipString}:${server.port}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(server.id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const testRcon = async (serverId: number) => {
@@ -66,15 +121,51 @@ export default function ServersPage() {
           </h1>
           <p className="text-slate-400 mt-1">{t("servers.description")}</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          {t("servers.add_server")}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setIsDynamicModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+          >
+            <Zap className="w-5 h-5" />
+            {t("servers.create_dynamic")}
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            {t("servers.add_server")}
+          </button>
+        </div>
       </div>
 
+      {/* Last created dynamic server banner */}
+      {lastCreated && (
+        <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-emerald-400 font-medium">{t("servers.server_created")}</p>
+            <p className="text-slate-300 text-sm mt-1">
+              {t("servers.connect_url")}: <code className="bg-slate-800 px-2 py-0.5 rounded text-emerald-300">{lastCreated.connectUrl}</code>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(lastCreated.connectUrl);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <Copy className="w-4 h-4" />
+              {t("servers.connect")}
+            </button>
+            <button onClick={() => setLastCreated(null)} className="text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Static server modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-screen">
@@ -150,6 +241,87 @@ export default function ServersPage() {
         </div>
       )}
 
+      {/* Dynamic server modal */}
+      {isDynamicModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-screen">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Zap className="w-5 h-5 text-emerald-400" />
+                {t("servers.new_dynamic_server")}
+              </h2>
+              <button onClick={() => setIsDynamicModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateDynamic}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.server_name")}</label>
+                  <input
+                    type="text"
+                    required
+                    value={dynamicFormData.name}
+                    onChange={(e) => setDynamicFormData({ ...dynamicFormData, name: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder={t("servers.server_name_placeholder")}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.server_password")}</label>
+                    <input
+                      type="text"
+                      value={dynamicFormData.password}
+                      onChange={(e) => setDynamicFormData({ ...dynamicFormData, password: e.target.value })}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.max_players")}</label>
+                    <input
+                      type="number"
+                      required
+                      min={2}
+                      max={64}
+                      value={dynamicFormData.maxPlayers}
+                      onChange={(e) => setDynamicFormData({ ...dynamicFormData, maxPlayers: parseInt(e.target.value) })}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.rcon_password")}</label>
+                  <input
+                    type="password"
+                    value={dynamicFormData.rconPassword}
+                    onChange={(e) => setDynamicFormData({ ...dynamicFormData, rconPassword: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Auto-generated if empty"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsDynamicModalOpen(false)}
+                  className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                >
+                  {t("servers.cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? t("servers.creating") : t("servers.create_server")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isLoading && <div className="text-slate-400">{t("servers.loading")}</div>}
       {error && <div className="text-red-500">{t("servers.error_fetching")}</div>}
       {servers && servers.length === 0 && (
@@ -169,9 +341,22 @@ export default function ServersPage() {
                   <p className="text-slate-400 text-sm mt-0.5">{server.ipString}:{server.port}</p>
                 </div>
               </div>
-              <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${server.inUse ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-300'}`}>
-                {server.inUse ? t("servers.in_match") : t("servers.available")}
-              </span>
+              <div className="flex items-center gap-2">
+                {server.isDynamic ? (
+                  <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    {t("servers.dynamic")}
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-700/50 text-slate-300 flex items-center gap-1">
+                    <Monitor className="w-3 h-3" />
+                    {t("servers.static_server")}
+                  </span>
+                )}
+                <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${server.inUse ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-300'}`}>
+                  {server.inUse ? t("servers.in_match") : t("servers.available")}
+                </span>
+              </div>
             </div>
             <div className="p-4 bg-slate-950/50 flex-1">
               {statusMap[server.id]?.online === true && (
@@ -183,16 +368,68 @@ export default function ServersPage() {
               {statusMap[server.id]?.online == null && (
                 <p className="text-sm text-slate-500">{t("servers.ready")}</p>
               )}
+              {server.tvPort && (
+                <p className="text-xs text-slate-500 mt-1">GOTV: {server.ipString}:{server.tvPort}</p>
+              )}
             </div>
-            <div className="p-4 border-t border-slate-800 flex justify-end gap-3">
-              <button className="text-sm text-slate-400 hover:text-white transition-colors">{t("servers.edit")}</button>
-              <button
-                onClick={() => testRcon(server.id)}
-                disabled={statusMap[server.id]?.loading}
-                className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
-              >
-                {statusMap[server.id]?.loading ? t("servers.testing") : t("servers.test_rcon")}
-              </button>
+            <div className="p-4 border-t border-slate-800 flex justify-between items-center">
+              <div className="flex gap-2">
+                {server.isDynamic && (
+                  <>
+                    <button
+                      onClick={() => handleServerAction(server.id, "start")}
+                      disabled={!!actionLoading[server.id]}
+                      className="p-1.5 text-green-400 hover:bg-green-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      title={t("servers.start")}
+                    >
+                      {actionLoading[server.id] === "start" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleServerAction(server.id, "stop")}
+                      disabled={!!actionLoading[server.id]}
+                      className="p-1.5 text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      title={t("servers.stop")}
+                    >
+                      {actionLoading[server.id] === "stop" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleServerAction(server.id, "restart")}
+                      disabled={!!actionLoading[server.id]}
+                      className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      title={t("servers.restart")}
+                    >
+                      {actionLoading[server.id] === "restart" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteDynamic(server.id)}
+                      disabled={!!actionLoading[server.id]}
+                      className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      title={t("servers.delete_dynamic")}
+                    >
+                      {actionLoading[server.id] === "delete" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </>
+                )}
+              </div>
+              <div className="flex gap-3 items-center">
+                <button
+                  onClick={() => copyConnect(server)}
+                  className="flex items-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {copiedId === server.id ? t("servers.copied") : t("servers.connect")}
+                </button>
+                {!server.isDynamic && (
+                  <button className="text-sm text-slate-400 hover:text-white transition-colors">{t("servers.edit")}</button>
+                )}
+                <button
+                  onClick={() => testRcon(server.id)}
+                  disabled={statusMap[server.id]?.loading}
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+                >
+                  {statusMap[server.id]?.loading ? t("servers.testing") : t("servers.test_rcon")}
+                </button>
+              </div>
             </div>
           </div>
         ))}
