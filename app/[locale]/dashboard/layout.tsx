@@ -3,15 +3,6 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { LayoutDashboard, Swords, Activity, Users, Shield } from "lucide-react";
-
-const links = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Lobbies", href: "/dashboard/lobbies", icon: Swords },
-  { name: "Matches", href: "/dashboard/matches", icon: Activity },
-  { name: "Teams", href: "/dashboard/teams", icon: Users },
-  { name: "Maps", href: "/dashboard/maps", icon: Shield },
-];
 
 export default async function DashboardLayout({
   children,

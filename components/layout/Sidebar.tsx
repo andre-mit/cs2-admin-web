@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Globe } from "lucide-react";
+import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Globe, Puzzle } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { key: "teams", href: "/dashboard/teams", icon: Users },
   { key: "seasons", href: "/dashboard/seasons", icon: Trophy },
   { key: "servers", href: "/dashboard/servers", icon: Server },
+  { key: "plugins", href: "/dashboard/plugins", icon: Puzzle },
 ];
 
 export default function Sidebar() {

@@ -25,7 +25,7 @@ export function getAuthOptions(req?: NextRequest): AuthOptions {
       ),
     ],
     callbacks: {
-      async signIn({ user, account, profile }) {
+      async signIn({ user }) {
         console.log("[Auth] Tentativa de Login Público. User:", user);
         return true;
       },

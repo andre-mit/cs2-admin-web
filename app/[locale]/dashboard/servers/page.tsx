@@ -3,7 +3,9 @@
 import { Server, Plus, X, Wifi, WifiOff, Loader2, Play, Square, RotateCcw, Trash2, Copy, Zap, Monitor } from "lucide-react";
 import useSWR from "swr";
 import { useState } from "react";
-import { serversService, CS2Server, DynamicServerResult } from "@/services/serversService";
+import { serversService, CS2Server, DynamicServerResult, PluginSelectionItem } from "@/services/serversService";
+import { pluginsService, GamePlugin } from "@/services/pluginsService";
+import { useEffect } from "react";
 import { swrFetcher } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
 
@@ -19,11 +21,25 @@ export default function ServersPage() {
   const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ displayName: "", ipString: "", port: 27015, rconPassword: "" });
-  const [dynamicFormData, setDynamicFormData] = useState({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10 });
+  const [dynamicFormData, setDynamicFormData] = useState<{
+    name: string;
+    password?: string;
+    rconPassword?: string;
+    maxPlayers: number;
+    pluginSelections: PluginSelectionItem[];
+  }>({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [] });
+  const [availablePlugins, setAvailablePlugins] = useState<GamePlugin[]>([]);
+  const [editingPluginConfig, setEditingPluginConfig] = useState<number | null>(null);
   const [statusMap, setStatusMap] = useState<Record<number, ServerStatus>>({});
   const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
   const [lastCreated, setLastCreated] = useState<DynamicServerResult | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isDynamicModalOpen) {
+      pluginsService.getAllPlugins().then(setAvailablePlugins).catch(console.error);
+    }
+  }, [isDynamicModalOpen]);
 
   const handleCreateServer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +64,7 @@ export default function ServersPage() {
     try {
       const result = await serversService.createDynamic(dynamicFormData);
       setLastCreated(result);
-      setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10 });
+      setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [] });
       setIsDynamicModalOpen(false);
       mutate();
     } catch (err) {
@@ -301,6 +317,77 @@ export default function ServersPage() {
                   />
                 </div>
               </div>
+
+              {/* Plugins Selection */}
+              <div className="mt-4 pt-4 border-t border-slate-800">
+                <label className="block text-sm font-medium text-slate-300 mb-2">Plugins</label>
+                {availablePlugins.length === 0 ? (
+                  <p className="text-sm text-slate-500">No plugins available.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {availablePlugins.map(plugin => {
+                      const isSelected = dynamicFormData.pluginSelections.some(p => p.pluginId === plugin.id);
+                      const currentSelection = dynamicFormData.pluginSelections.find(p => p.pluginId === plugin.id);
+                      
+                      return (
+                        <div key={plugin.id} className="bg-slate-950 border border-slate-800 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setDynamicFormData({
+                                      ...dynamicFormData,
+                                      pluginSelections: [...dynamicFormData.pluginSelections, { pluginId: plugin.id, configOverridesJson: plugin.configFilesJson }]
+                                    });
+                                  } else {
+                                    setDynamicFormData({
+                                      ...dynamicFormData,
+                                      pluginSelections: dynamicFormData.pluginSelections.filter(p => p.pluginId !== plugin.id)
+                                    });
+                                    if (editingPluginConfig === plugin.id) setEditingPluginConfig(null);
+                                  }
+                                }}
+                                className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                              />
+                              <span className="text-sm font-medium text-white">{plugin.name}</span>
+                            </label>
+                            {isSelected && (
+                              <button
+                                type="button"
+                                onClick={() => setEditingPluginConfig(editingPluginConfig === plugin.id ? null : plugin.id)}
+                                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                              >
+                                {editingPluginConfig === plugin.id ? "Close Config" : "Edit Config"}
+                              </button>
+                            )}
+                          </div>
+                          {isSelected && editingPluginConfig === plugin.id && (
+                            <div className="mt-3">
+                              <label className="block text-xs font-medium text-slate-400 mb-1">Configuration Overrides (JSON array matching templates)</label>
+                              <textarea
+                                value={currentSelection?.configOverridesJson || ""}
+                                onChange={(e) => {
+                                  setDynamicFormData({
+                                    ...dynamicFormData,
+                                    pluginSelections: dynamicFormData.pluginSelections.map(p => 
+                                      p.pluginId === plugin.id ? { ...p, configOverridesJson: e.target.value } : p
+                                    )
+                                  });
+                                }}
+                                className="w-full h-32 px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"

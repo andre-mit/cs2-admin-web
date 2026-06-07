@@ -7,6 +7,7 @@ const en = {
     teams: "Teams",
     seasons: "Seasons",
     servers: "Servers",
+    plugins: "Plugins",
     theme_light: "Light",
     theme_dark: "Dark",
     theme_system: "System",
@@ -213,6 +214,34 @@ const en = {
     title: "Lobby Closed",
     description: "This lobby has been closed or deleted by an administrator.",
     return_home: "Return to Home"
+  },
+  plugins: {
+    title: "Plugins",
+    description: "Manage game plugins and configuration templates.",
+    add_plugin: "Add Plugin",
+    new_plugin: "New Plugin",
+    plugin_name: "Plugin Name",
+    plugin_name_placeholder: "e.g. MatchZy",
+    plugin_desc: "Description",
+    plugin_desc_placeholder: "Match management plugin...",
+    config_files: "Configuration Files",
+    add_config_file: "Add Config File",
+    upload_zip: "Upload Plugin .zip",
+    uploading: "Uploading...",
+    delete_plugin: "Delete Plugin",
+    confirm_delete: "Are you sure you want to delete this plugin?",
+    save: "Save Plugin",
+    saving: "Saving...",
+    cancel: "Cancel",
+    no_plugins: "No plugins registered.",
+    loading: "Loading plugins...",
+    error_loading: "Error loading plugins.",
+    key: "Key",
+    label: "Label",
+    relative_path: "Relative Path",
+    format: "Format",
+    default_content: "Default Content (JSON)",
+    zip_uploaded: "Plugin ZIP uploaded successfully!"
   }
 };
 

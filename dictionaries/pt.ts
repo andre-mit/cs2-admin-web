@@ -7,6 +7,7 @@ const pt = {
     teams: "Equipes",
     seasons: "Temporadas",
     servers: "Servidores",
+    plugins: "Plugins",
     theme_light: "Claro",
     theme_dark: "Escuro",
     theme_system: "Sistema",
@@ -213,6 +214,34 @@ const pt = {
     title: "Lobby Fechado",
     description: "Este lobby foi fechado ou excluído por um administrador.",
     return_home: "Voltar ao Início"
+  },
+  plugins: {
+    title: "Plugins",
+    description: "Gerencie plugins do jogo e templates de configuração.",
+    add_plugin: "Adicionar Plugin",
+    new_plugin: "Novo Plugin",
+    plugin_name: "Nome do Plugin",
+    plugin_name_placeholder: "ex. MatchZy",
+    plugin_desc: "Descrição",
+    plugin_desc_placeholder: "Plugin de gerenciamento de partidas...",
+    config_files: "Arquivos de Configuração",
+    add_config_file: "Adicionar Arquivo de Config",
+    upload_zip: "Enviar .zip do Plugin",
+    uploading: "Enviando...",
+    delete_plugin: "Excluir Plugin",
+    confirm_delete: "Tem certeza que deseja excluir este plugin?",
+    save: "Salvar Plugin",
+    saving: "Salvando...",
+    cancel: "Cancelar",
+    no_plugins: "Nenhum plugin registrado.",
+    loading: "Carregando plugins...",
+    error_loading: "Erro ao carregar plugins.",
+    key: "Chave (Key)",
+    label: "Rótulo (Label)",
+    relative_path: "Caminho Relativo",
+    format: "Formato",
+    default_content: "Conteúdo Padrão (JSON)",
+    zip_uploaded: "ZIP do Plugin enviado com sucesso!"
   }
 };
 

@@ -18,11 +18,17 @@ export interface ServerStatus {
   response?: string;
 }
 
+export interface PluginSelectionItem {
+  pluginId: number;
+  configOverridesJson?: string;
+}
+
 export interface CreateDynamicServerRequest {
   name: string;
-  password: string;
+  password?: string;
   rconPassword?: string;
   maxPlayers: number;
+  pluginSelections?: PluginSelectionItem[];
 }
 
 export interface DynamicServerResult {

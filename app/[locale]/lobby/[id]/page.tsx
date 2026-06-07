@@ -6,7 +6,7 @@ import * as signalR from "@microsoft/signalr";
 import { Swords, Ban, CheckCircle, Plus, Pencil, Check, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/services/apiClient";
-import { lobbiesService, Lobby, LobbyPlayer } from "@/services/lobbiesService";
+import { lobbiesService, Lobby } from "@/services/lobbiesService";
 import { mapsService, GameMap } from "@/services/mapsService";
 import { useI18n } from "@/contexts/I18nContext";
 import Image from "next/image";
@@ -20,7 +20,7 @@ export default function LobbyPage() {
 
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [maps, setMaps] = useState<GameMap[]>([]);
-  const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
+
   const [editingTeam1, setEditingTeam1] = useState(false);
   const [editingTeam2, setEditingTeam2] = useState(false);
   const [team1NameInput, setTeam1NameInput] = useState("");
@@ -57,15 +57,14 @@ export default function LobbyPage() {
           const currentLocale = window.location.pathname.split('/')[1] || 'en';
           router.push(`/${currentLocale}/lobby/closed`);
         });
-        setConnection(newConnection);
-      })
+        })
       .catch(e => console.error("Connection failed: ", e));
 
     return () => {
       newConnection.invoke("LeaveLobbyGroup", lobbyId);
       newConnection.stop();
     };
-  }, [lobbyId]);
+  }, [lobbyId, router]);
 
   const joinTeam = async (teamId: number) => {
     if (!session?.user) return;
@@ -139,7 +138,7 @@ export default function LobbyPage() {
 
   const mapPool = lobby.mapPool.split(",");
   const vetoHistory = JSON.parse(lobby.vetoHistory || "[]") as string[];
-  const selectedMaps = JSON.parse(lobby.selectedMaps || "[]") as string[];
+
 
   const getVetoState = () => {
     if (!lobby || lobby.state !== "Veto") return { team: 0, action: 'none' };

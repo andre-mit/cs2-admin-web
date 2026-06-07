@@ -1,6 +1,6 @@
 "use client";
 
-import { Trophy, Users, Server, Shield, Activity } from "lucide-react";
+import { Trophy, Users, Server, Activity } from "lucide-react";
 import useSWR from "swr";
 import { swrFetcher } from "@/services/apiClient";
 import { Team } from "@/services/teamsService";
@@ -19,7 +19,7 @@ export default function Home() {
   const { data: matches } = useSWR<Match[]>("/api/v1/matches", swrFetcher);
 
   const activeMatches = matches ? matches.filter(m => m.status === "Live" || m.status === "Pending").length : 0;
-  const onlineServers = servers ? servers.filter(s => s.inUse).length : 0;
+
 
   return (
     <div className="space-y-6">
