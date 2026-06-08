@@ -7,12 +7,14 @@ import { lobbiesService, Lobby } from "@/services/lobbiesService";
 import { GameMap } from "@/services/mapsService";
 import { swrFetcher } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 export default function LobbiesAdminPage() {
   const { t } = useI18n();
   const { data: lobbies, mutate } = useSWR<Lobby[]>("/api/v1/lobbies", swrFetcher);
   const { data: maps } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const [isCreating, setIsCreating] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const [title, setTitle] = useState("");
   const [maxMaps, setMaxMaps] = useState("1");
@@ -37,10 +39,13 @@ export default function LobbiesAdminPage() {
     mutate();
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm(t("lobbies.confirm_delete"))) {
-      await lobbiesService.delete(id);
+  const handleDelete = async () => {
+    if (deleteConfirmId === null) return;
+    try {
+      await lobbiesService.delete(deleteConfirmId);
       mutate();
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -186,7 +191,7 @@ export default function LobbiesAdminPage() {
                 <Play className="w-4 h-4" />
               </a>
               <button
-                onClick={() => handleDelete(lobby.id)}
+                onClick={() => setDeleteConfirmId(lobby.id)}
                 className="p-2 bg-red-900/50 hover:bg-red-800 text-red-200 rounded-lg transition-colors"
                 title={t("lobbies.delete_lobby")}
               >
@@ -196,6 +201,13 @@ export default function LobbiesAdminPage() {
           </div>
         ))}
       </div>
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title={t("lobbies.confirm_delete_title") || "Confirmação de Exclusão"}
+        message={t("lobbies.confirm_delete") || "Tem certeza que deseja excluir?"}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 }

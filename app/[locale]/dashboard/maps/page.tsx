@@ -1,11 +1,14 @@
 "use client";
 
+import Image from "next/image";
+
 import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Edit, Trash2, Map, Globe, Shield, Upload, Link } from "lucide-react";
 import { mapsService, GameMap } from "@/services/mapsService";
 import { swrFetcher, API_BASE_URL, getAuthToken } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 type ImageMode = "url" | "upload";
 
@@ -76,6 +79,7 @@ export default function MapsPage() {
   const [badgeMode, setBadgeMode] = useState<ImageMode>("url");
   const [bgUploading, setBgUploading] = useState(false);
   const [badgeUploading, setBadgeUploading] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const handleBgFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -116,14 +120,16 @@ export default function MapsPage() {
     fetchMaps();
   };
 
-  const deleteMap = async (id: number) => {
-    if (!confirm(t("maps.confirm_delete"))) return;
+  const deleteMap = async () => {
+    if (deleteConfirmId === null) return;
     
     try {
-      await mapsService.delete(id);
+      await mapsService.delete(deleteConfirmId);
     } catch(e) {
       console.error(e);
       alert(t("maps.delete_failed"));
+    } finally {
+      setDeleteConfirmId(null);
     }
     fetchMaps();
   };
@@ -248,7 +254,7 @@ export default function MapsPage() {
               )}
               {currentMap.badgeUrl && (
                 <div className="mt-2 flex items-center gap-2">
-                  <img src={currentMap.badgeUrl} alt="Badge preview" className="h-16 w-16 object-contain rounded-lg border border-slate-800 bg-slate-950 p-1" />
+                  <Image src={currentMap.badgeUrl} alt="Badge preview" width={64} height={64} unoptimized className="h-16 w-16 object-contain rounded-lg border border-slate-800 bg-slate-950 p-1" />
                 </div>
               )}
             </div>
@@ -293,7 +299,7 @@ export default function MapsPage() {
                     {t("maps.official")}
                   </div>
                   {map.badgeUrl && (
-                    <img src={map.badgeUrl} alt={`${map.displayName} badge`} className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
+                    <Image src={map.badgeUrl} alt={`${map.displayName} badge`} width={40} height={40} unoptimized className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
                   )}
                 </div>
                 
@@ -303,7 +309,7 @@ export default function MapsPage() {
                   
                   <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4">
                     <button onClick={() => handleEdit(map)} className="p-2 bg-slate-800 hover:bg-indigo-600 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => deleteMap(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteConfirmId(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               </div>
@@ -334,7 +340,7 @@ export default function MapsPage() {
                     {t("maps.workshop")}
                   </div>
                   {map.badgeUrl && (
-                    <img src={map.badgeUrl} alt={`${map.displayName} badge`} className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
+                    <Image src={map.badgeUrl} alt={`${map.displayName} badge`} width={40} height={40} unoptimized className="absolute top-2 right-2 h-10 w-10 object-contain drop-shadow-lg" />
                   )}
                 </div>
                 
@@ -344,7 +350,7 @@ export default function MapsPage() {
                   
                   <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4">
                     <button onClick={() => handleEdit(map)} className="p-2 bg-slate-800 hover:bg-indigo-600 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => deleteMap(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteConfirmId(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               </div>
@@ -357,6 +363,13 @@ export default function MapsPage() {
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title={t("maps.confirm_delete_title") || "Confirmação de Exclusão"}
+        message={t("maps.confirm_delete") || "Tem certeza que deseja excluir?"}
+        onConfirm={deleteMap}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 }

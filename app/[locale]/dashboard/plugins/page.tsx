@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { useI18n } from "@/contexts/I18nContext";
 import { GamePlugin, pluginsService } from "@/services/pluginsService";
 import { swrFetcher } from "@/services/apiClient";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 export default function PluginsPage() {
   const { t } = useI18n();
@@ -43,6 +44,7 @@ export default function PluginsPage() {
 ]`);
   const [newFile, setNewFile] = useState<File | null>(null);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -97,14 +99,16 @@ export default function PluginsPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(t("plugins.confirm_delete"))) return;
+  const handleDelete = async () => {
+    if (deleteConfirmId === null) return;
     try {
-      await pluginsService.deletePlugin(id);
+      await pluginsService.deletePlugin(deleteConfirmId);
       mutate();
     } catch (error) {
       console.error(error);
       alert("Error deleting plugin");
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -233,11 +237,10 @@ export default function PluginsPage() {
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-lg font-bold text-white">{plugin.name}</h3>
                   <button
-                    onClick={() => handleDelete(plugin.id)}
-                    className="text-slate-500 hover:text-red-400 transition-colors"
-                    title={t("plugins.delete_plugin")}
+                    onClick={() => setDeleteConfirmId(plugin.id)}
+                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-md transition-colors"
                   >
-                    <Trash className="w-4 h-4" />
+                    <Trash className="w-5 h-5" />
                   </button>
                 </div>
                 <p className="text-sm text-slate-400 mb-4">{plugin.description || "No description"}</p>
@@ -274,6 +277,13 @@ export default function PluginsPage() {
           ))}
         </div>
       )}
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title={t("plugins.confirm_delete_title") || "Confirmação de Exclusão"}
+        message={t("plugins.confirm_delete") || "Tem certeza que deseja excluir?"}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 }

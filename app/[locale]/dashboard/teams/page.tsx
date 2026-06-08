@@ -6,6 +6,7 @@ import { useState } from "react";
 import { teamsService, Team } from "@/services/teamsService";
 import { swrFetcher } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 export default function TeamsPage() {
   const { t } = useI18n();
@@ -14,6 +15,7 @@ export default function TeamsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Form states
   const [name, setName] = useState("");
@@ -39,14 +41,16 @@ export default function TeamsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteTeam = async (id: number) => {
-    if (!confirm(t("teams.confirm_delete"))) return;
+  const handleDeleteTeam = async () => {
+    if (deleteConfirmId === null) return;
     
     try {
-      await teamsService.delete(id);
+      await teamsService.delete(deleteConfirmId);
       mutate();
     } catch (err) {
       console.error(err);
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -254,7 +258,7 @@ export default function TeamsPage() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleDeleteTeam(team.id)}
+                          onClick={() => setDeleteConfirmId(team.id)}
                           className="text-red-400 hover:text-red-300 transition-colors p-1"
                           title={t("teams.confirm_delete")}
                         >
@@ -269,6 +273,13 @@ export default function TeamsPage() {
           </table>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title={t("teams.confirm_delete_title") || "Confirmação de Exclusão"}
+        message={t("teams.confirm_delete") || "Tem certeza que deseja excluir?"}
+        onConfirm={handleDeleteTeam}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 }
