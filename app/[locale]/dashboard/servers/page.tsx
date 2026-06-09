@@ -36,6 +36,7 @@ export default function ServersPage() {
   const [lastCreated, setLastCreated] = useState<DynamicServerResult | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [dynamicError, setDynamicError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isDynamicModalOpen) {
@@ -63,14 +64,16 @@ export default function ServersPage() {
   const handleCreateDynamic = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setDynamicError(null);
     try {
       const result = await serversService.createDynamic(dynamicFormData);
       setLastCreated(result);
       setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [] });
       setIsDynamicModalOpen(false);
       mutate();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to create dynamic server:", err);
+      setDynamicError(t("servers.operation_failed") || "An error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -106,7 +109,10 @@ export default function ServersPage() {
   };
 
   const copyConnect = (server: CS2Server) => {
-    const url = `${server.ipString}:${server.port}`;
+    let url = `connect ${server.ipString}:${server.port}`;
+    if (server.serverPassword) {
+      url += `; password ${server.serverPassword}`;
+    }
     navigator.clipboard.writeText(url);
     setCopiedId(server.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -275,6 +281,11 @@ export default function ServersPage() {
               </button>
             </div>
             <form onSubmit={handleCreateDynamic}>
+              {dynamicError && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                  {dynamicError}
+                </div>
+              )}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.server_name")}</label>
@@ -525,123 +536,6 @@ export default function ServersPage() {
           </div>
         ))}
       </div>
-      {/* Dynamic Modal */}
-      {isDynamicModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-slate-700 shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-slate-700">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Zap className="w-5 h-5 text-emerald-400" />
-                {t("servers.create_dynamic")}
-              </h2>
-              <button
-                onClick={() => setIsDynamicModalOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              <form id="dynamic-form" onSubmit={handleCreateDynamic} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Nome do Servidor</label>
-                    <input
-                      type="text"
-                      value={dynamicFormData.name}
-                      onChange={e => setDynamicFormData({ ...dynamicFormData, name: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Máximo de Jogadores</label>
-                    <input
-                      type="number"
-                      value={dynamicFormData.maxPlayers}
-                      onChange={e => setDynamicFormData({ ...dynamicFormData, maxPlayers: parseInt(e.target.value) || 10 })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                      required
-                      min={1}
-                      max={64}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Senha do Servidor (Opcional)</label>
-                    <input
-                      type="text"
-                      value={dynamicFormData.password}
-                      onChange={e => setDynamicFormData({ ...dynamicFormData, password: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Senha RCON (Opcional)</label>
-                    <input
-                      type="text"
-                      value={dynamicFormData.rconPassword}
-                      onChange={e => setDynamicFormData({ ...dynamicFormData, rconPassword: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <h3 className="text-lg font-medium text-white mb-4">Plugins (Opcional)</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {availablePlugins.map(plugin => {
-                      const isSelected = dynamicFormData.pluginSelections.some(p => p.pluginId === plugin.id);
-                      return (
-                        <div key={plugin.id} className="flex items-center gap-3 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setDynamicFormData({
-                                  ...dynamicFormData,
-                                  pluginSelections: [...dynamicFormData.pluginSelections, { pluginId: plugin.id, configOverridesJson: "{}" }]
-                                });
-                              } else {
-                                setDynamicFormData({
-                                  ...dynamicFormData,
-                                  pluginSelections: dynamicFormData.pluginSelections.filter(p => p.pluginId !== plugin.id)
-                                });
-                              }
-                            }}
-                            className="w-4 h-4 text-emerald-500 rounded border-slate-700 bg-slate-900 focus:ring-emerald-500"
-                          />
-                          <span className="text-sm font-medium text-slate-200">{plugin.name}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </form>
-            </div>
-            <div className="p-6 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsDynamicModalOpen(false)}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                disabled={isSubmitting}
-              >
-                {t("common.cancel") || "Cancelar"}
-              </button>
-              <button
-                type="submit"
-                form="dynamic-form"
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t("servers.create") || "Criar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <ConfirmModal
         isOpen={deleteConfirmId !== null}

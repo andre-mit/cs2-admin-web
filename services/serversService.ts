@@ -5,6 +5,7 @@ export interface CS2Server {
   ipString: string;
   port: number;
   rconPassword?: string;
+  serverPassword?: string;
   displayName?: string;
   inUse: boolean;
   containerId?: string;
