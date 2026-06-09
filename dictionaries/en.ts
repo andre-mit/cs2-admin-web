@@ -11,7 +11,39 @@ const en = {
     theme_light: "Light",
     theme_dark: "Dark",
     theme_system: "System",
-    language: "Language"
+    language: "Language",
+    tokens: "GSLT Tokens"
+  },
+  common: {
+    cancel: "Cancel",
+    confirm: "Confirm",
+    save: "Save",
+    delete: "Delete",
+    edit: "Edit",
+    loading: "Loading...",
+    error: "An error occurred",
+    success: "Success"
+  },
+  tokens: {
+    title: "Steam GSLT Tokens",
+    description: "Manage your Game Server Login Tokens used to register the dynamically created servers on Steam.",
+    new_token: "New Token",
+    add_token: "Add Token",
+    memo: "Memo (Description)",
+    memo_placeholder: "e.g. Public Scrim 01",
+    token: "GSLT Token",
+    token_placeholder: "Token hash only",
+    is_available: "Available",
+    save_token: "Save Token",
+    confirm_delete: "Are you sure you want to delete this token?",
+    confirm_delete_title: "Delete Token",
+    no_tokens: "No tokens configured.",
+    loading: "Loading tokens...",
+    error_loading: "Error fetching tokens.",
+    status: "Status",
+    used: "In Use",
+    free: "Free",
+    actions: "Actions"
   },
   landing: {
     title_admin: "Admin Pro",

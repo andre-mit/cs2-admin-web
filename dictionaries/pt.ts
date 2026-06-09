@@ -11,7 +11,39 @@ const pt = {
     theme_light: "Claro",
     theme_dark: "Escuro",
     theme_system: "Sistema",
-    language: "Idioma"
+    language: "Idioma",
+    tokens: "Tokens GSLT"
+  },
+  common: {
+    cancel: "Cancelar",
+    confirm: "Confirmar",
+    save: "Salvar",
+    delete: "Excluir",
+    edit: "Editar",
+    loading: "Carregando...",
+    error: "Ocorreu um erro",
+    success: "Sucesso"
+  },
+  tokens: {
+    title: "Tokens Steam GSLT",
+    description: "Gerencie as chaves de acesso (Game Server Login Tokens) usadas para registrar os servidores criados na Steam.",
+    new_token: "Novo Token",
+    add_token: "Adicionar Token",
+    memo: "Descrição (Memo)",
+    memo_placeholder: "ex: Servidor Publico 01",
+    token: "Token GSLT",
+    token_placeholder: "Apenas o hash do token",
+    is_available: "Disponível",
+    save_token: "Salvar Token",
+    confirm_delete: "Tem certeza de que deseja excluir este token?",
+    confirm_delete_title: "Excluir Token",
+    no_tokens: "Nenhum token configurado.",
+    loading: "Carregando tokens...",
+    error_loading: "Erro ao buscar tokens.",
+    status: "Status",
+    used: "Em Uso",
+    free: "Livre",
+    actions: "Ações"
   },
   landing: {
     title_admin: "Admin Pro",
