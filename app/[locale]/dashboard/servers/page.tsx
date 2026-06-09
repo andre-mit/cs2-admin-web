@@ -93,16 +93,21 @@ export default function ServersPage() {
     }
   };
 
-  const handleDeleteDynamic = async () => {
+  const handleDeleteServer = async () => {
     if (deleteConfirmId === null) return;
     const serverId = deleteConfirmId;
+    const server = servers?.find(s => s.id === serverId);
     setDeleteConfirmId(null);
     setActionLoading(prev => ({ ...prev, [serverId]: "delete" }));
     try {
-      await serversService.deleteDynamic(serverId);
+      if (server?.isDynamic) {
+        await serversService.deleteDynamic(serverId);
+      } else {
+        await serversService.delete(serverId);
+      }
       mutate();
     } catch (err) {
-      console.error("Failed to delete dynamic server:", err);
+      console.error("Failed to delete server:", err);
     } finally {
       setActionLoading(prev => { const n = { ...prev }; delete n[serverId]; return n; });
     }
@@ -522,7 +527,17 @@ export default function ServersPage() {
                   {copiedId === server.id ? t("servers.copied") : t("servers.connect")}
                 </button>
                 {!server.isDynamic && (
-                  <button className="text-sm text-slate-400 hover:text-white transition-colors">{t("servers.edit")}</button>
+                  <>
+                    <button className="text-sm text-slate-400 hover:text-white transition-colors">{t("servers.edit")}</button>
+                    <button
+                      onClick={() => setDeleteConfirmId(server.id)}
+                      disabled={!!actionLoading[server.id]}
+                      className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      title={t("common.delete")}
+                    >
+                      {actionLoading[server.id] === "delete" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => testRcon(server.id)}
@@ -541,7 +556,7 @@ export default function ServersPage() {
         isOpen={deleteConfirmId !== null}
         title={t("servers.confirm_delete_dynamic_title") || "Confirmação de Exclusão"}
         message={t("servers.confirm_delete_dynamic") || "Tem certeza que deseja excluir?"}
-        onConfirm={handleDeleteDynamic}
+        onConfirm={handleDeleteServer}
         onCancel={() => setDeleteConfirmId(null)}
       />
     </div>
