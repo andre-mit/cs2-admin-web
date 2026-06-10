@@ -1,6 +1,6 @@
 "use client";
 
-import { Server, Plus, X, Wifi, WifiOff, Loader2, Play, Square, RotateCcw, Trash2, Copy, Zap, Monitor } from "lucide-react";
+import { Server, Plus, X, Wifi, WifiOff, Loader2, Play, Square, RotateCcw, Trash2, Copy, Zap, Monitor, ChevronDown, ChevronUp } from "lucide-react";
 import useSWR from "swr";
 import { useState } from "react";
 import { serversService, CS2Server, DynamicServerResult, PluginSelectionItem } from "@/services/serversService";
@@ -15,6 +15,19 @@ interface ServerStatus {
   online: boolean | null;
 }
 
+const ADVANCED_VARIABLES = [
+  { key: "CS2_CHEATS", cvar: "sv_cheats", type: "number", descKey: "sv_cheats", default: "0" },
+  { key: "CS2_SERVER_HIBERNATE", cvar: "sv_hibernate_when_empty", type: "number", descKey: "sv_hibernate_when_empty", default: "1" },
+  { key: "TV_AUTORECORD", cvar: "tv_autorecord", type: "number", descKey: "tv_autorecord", default: "1" },
+  { key: "TV_ENABLE", cvar: "tv_enable", type: "number", descKey: "tv_enable", default: "1" },
+  { key: "TV_MAXRATE", cvar: "tv_maxrate", type: "number", descKey: "tv_maxrate", default: "64" },
+  { key: "CS2_LOG", cvar: "log", type: "text", descKey: "log", default: "on" },
+  { key: "CS2_LOG_MONEY", cvar: "mp_logmoney", type: "number", descKey: "mp_logmoney", default: "1" },
+  { key: "CS2_LOG_DETAIL", cvar: "mp_logdetail", type: "number", descKey: "mp_logdetail", default: "3" },
+  { key: "CS2_STARTMAP", cvar: "CS2_STARTMAP", type: "text", descKey: "cs2_startmap", default: "de_inferno" },
+  { key: "CS2_GAMEALIAS", cvar: "CS2_GAMEALIAS", type: "text", descKey: "cs2_gamealias", default: "competitive" },
+];
+
 export default function ServersPage() {
   const { t } = useI18n();
   const { data: servers, error, isLoading, mutate } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
@@ -28,7 +41,11 @@ export default function ServersPage() {
     rconPassword?: string;
     maxPlayers: number;
     pluginSelections: PluginSelectionItem[];
-  }>({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [] });
+    serverVariables: Record<string, string>;
+  }>({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [], serverVariables: {} });
+  const [showAdvancedVars, setShowAdvancedVars] = useState(false);
+  const [customVarKey, setCustomVarKey] = useState("");
+  const [customVarValue, setCustomVarValue] = useState("");
   const [availablePlugins, setAvailablePlugins] = useState<GamePlugin[]>([]);
   const [editingPluginConfig, setEditingPluginConfig] = useState<number | null>(null);
   const [statusMap, setStatusMap] = useState<Record<number, ServerStatus>>({});
@@ -68,7 +85,7 @@ export default function ServersPage() {
     try {
       const result = await serversService.createDynamic(dynamicFormData);
       setLastCreated(result);
-      setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [] });
+      setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [], serverVariables: {} });
       setIsDynamicModalOpen(false);
       mutate();
     } catch (err: any) {
@@ -338,6 +355,120 @@ export default function ServersPage() {
                 </div>
               </div>
 
+              {/* Advanced Variables */}
+              <div className="mt-4 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedVars(!showAdvancedVars)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <label className="text-sm font-medium text-slate-300 cursor-pointer">{t("servers.advanced_vars.title")}</label>
+                  {showAdvancedVars ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                </button>
+                {showAdvancedVars && (
+                  <div className="mt-4 space-y-4">
+                    <p className="text-xs text-slate-400">
+                      {t("servers.advanced_vars.description")}
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                      {ADVANCED_VARIABLES.map(v => (
+                        <div key={v.key} className="flex flex-col gap-1 bg-slate-950 p-2 rounded border border-slate-800">
+                          <label className="text-xs font-medium text-slate-300 flex justify-between">
+                            <span>{v.cvar}</span>
+                            <span className="text-slate-500 font-mono text-[10px]">{v.key}</span>
+                          </label>
+                          <input
+                            type={v.type === "number" ? "number" : "text"}
+                            placeholder={v.default}
+                            value={dynamicFormData.serverVariables[v.key] || ""}
+                            onChange={(e) => setDynamicFormData({
+                              ...dynamicFormData,
+                              serverVariables: {
+                                ...dynamicFormData.serverVariables,
+                                [v.key]: e.target.value
+                              }
+                            })}
+                            className="w-full px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                          />
+                          <p className="text-[10px] text-slate-500">{t(`servers.advanced_vars.${v.descKey}` as any)}</p>
+                        </div>
+                      ))}
+                      
+                      {/* Custom variables added by user */}
+                      {Object.entries(dynamicFormData.serverVariables)
+                        .filter(([k]) => !ADVANCED_VARIABLES.some(v => v.key === k))
+                        .map(([k, v]) => (
+                          <div key={k} className="flex flex-col gap-1 bg-slate-950 p-2 rounded border border-slate-800">
+                            <label className="text-xs font-medium text-emerald-400 flex justify-between items-center">
+                              <span>{k} ({t("servers.advanced_vars.custom_title")})</span>
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  const newVars = { ...dynamicFormData.serverVariables };
+                                  delete newVars[k];
+                                  setDynamicFormData({ ...dynamicFormData, serverVariables: newVars });
+                                }}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </label>
+                            <input
+                              type="text"
+                              value={v}
+                              onChange={(e) => setDynamicFormData({
+                                ...dynamicFormData,
+                                serverVariables: {
+                                  ...dynamicFormData.serverVariables,
+                                  [k]: e.target.value
+                                }
+                              })}
+                              className="w-full px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                      ))}
+                    </div>
+                    
+                    {/* Add custom variable */}
+                    <div className="flex gap-2 mt-2 pt-2 border-t border-slate-800">
+                      <input
+                        type="text"
+                        placeholder={t("servers.advanced_vars.var_name")}
+                        value={customVarKey}
+                        onChange={e => setCustomVarKey(e.target.value)}
+                        className="flex-1 px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder={t("servers.advanced_vars.var_value")}
+                        value={customVarValue}
+                        onChange={e => setCustomVarValue(e.target.value)}
+                        className="flex-1 px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customVarKey.trim() && customVarValue.trim()) {
+                            setDynamicFormData({
+                              ...dynamicFormData,
+                              serverVariables: {
+                                ...dynamicFormData.serverVariables,
+                                [customVarKey.trim()]: customVarValue.trim()
+                              }
+                            });
+                            setCustomVarKey("");
+                            setCustomVarValue("");
+                          }
+                        }}
+                        className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Plugins Selection */}
               <div className="mt-4 pt-4 border-t border-slate-800">
                 <label className="block text-sm font-medium text-slate-300 mb-2">Plugins</label>
@@ -348,7 +479,7 @@ export default function ServersPage() {
                     {availablePlugins.map(plugin => {
                       const isSelected = dynamicFormData.pluginSelections.some(p => p.pluginId === plugin.id);
                       const currentSelection = dynamicFormData.pluginSelections.find(p => p.pluginId === plugin.id);
-                      
+
                       return (
                         <div key={plugin.id} className="bg-slate-950 border border-slate-800 rounded-lg p-3">
                           <div className="flex items-center justify-between">
@@ -392,7 +523,7 @@ export default function ServersPage() {
                                 onChange={(e) => {
                                   setDynamicFormData({
                                     ...dynamicFormData,
-                                    pluginSelections: dynamicFormData.pluginSelections.map(p => 
+                                    pluginSelections: dynamicFormData.pluginSelections.map(p =>
                                       p.pluginId === plugin.id ? { ...p, configOverridesJson: e.target.value } : p
                                     )
                                   });

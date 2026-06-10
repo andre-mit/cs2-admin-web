@@ -30,6 +30,7 @@ export interface CreateDynamicServerRequest {
   rconPassword?: string;
   maxPlayers: number;
   pluginSelections?: PluginSelectionItem[];
+  serverVariables?: Record<string, string>;
 }
 
 export interface DynamicServerResult {

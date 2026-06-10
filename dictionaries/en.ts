@@ -156,7 +156,24 @@ const en = {
     deleting: "Deleting...",
     server_created: "Server created successfully!",
     server_deleted: "Server deleted successfully.",
-    operation_failed: "Operation failed. Please try again."
+    operation_failed: "Operation failed. Please try again.",
+    advanced_vars: {
+      title: "Advanced Server.cfg Variables",
+      description: "Customize server variables. Empty values will use the system default.",
+      custom_title: "Custom",
+      var_name: "Variable name (e.g. mp_roundtime)",
+      var_value: "Value",
+      sv_cheats: "Enable cheats (0 or 1)",
+      sv_hibernate_when_empty: "Hibernate server when empty (0 or 1)",
+      tv_autorecord: "Automatically record CSTV demos (0 or 1)",
+      tv_enable: "Enable CSTV (0 or 1)",
+      tv_maxrate: "Max CSTV spectator bandwidth rate",
+      log: "Turns logging 'on' or 'off'",
+      mp_logmoney: "Turns money logging on/off (0 or 1)",
+      mp_logdetail: "Combat damage logging (0=off, 1=enemy, 2=friendly, 3=all)",
+      cs2_startmap: "Initial map to load",
+      cs2_gamealias: "Game type alias (competitive, casual)"
+    }
   },
   teams: {
     title: "Team Management",

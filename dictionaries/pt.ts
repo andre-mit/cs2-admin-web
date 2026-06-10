@@ -156,7 +156,24 @@ const pt = {
     deleting: "Excluindo...",
     server_created: "Servidor criado com sucesso!",
     server_deleted: "Servidor excluído com sucesso.",
-    operation_failed: "Operação falhou. Tente novamente."
+    operation_failed: "Operação falhou. Tente novamente.",
+    advanced_vars: {
+      title: "Variáveis Avançadas do Server.cfg",
+      description: "Personalize variáveis do servidor. Valores vazios usarão o padrão do sistema.",
+      custom_title: "Customizado",
+      var_name: "Nome da variável (ex: mp_roundtime)",
+      var_value: "Valor",
+      sv_cheats: "Habilitar cheats (0 ou 1)",
+      sv_hibernate_when_empty: "Hibernar servidor quando vazio (0 ou 1)",
+      tv_autorecord: "Gravar demos CSTV automaticamente (0 ou 1)",
+      tv_enable: "Habilitar CSTV (0 ou 1)",
+      tv_maxrate: "Taxa máxima de largura de banda do espectador CSTV",
+      log: "Ligar 'on' ou desligar 'off' o log",
+      mp_logmoney: "Registrar dinheiro no log (0 ou 1)",
+      mp_logdetail: "Registrar dano de combate no log (0=desligado, 1=inimigo, 2=aliado, 3=todos)",
+      cs2_startmap: "Mapa inicial ao carregar",
+      cs2_gamealias: "Alias do tipo de jogo (competitive, casual)"
+    }
   },
   teams: {
     title: "Gerenciamento de Equipes",
