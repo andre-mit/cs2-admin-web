@@ -61,6 +61,15 @@ export default function ServersPage() {
     }
   }, [isDynamicModalOpen]);
 
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let pwd = "";
+    for (let i = 0; i < 8; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pwd;
+  };
+
   const handleCreateServer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.ipString.trim()) return;
@@ -260,12 +269,22 @@ export default function ServersPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.rcon_password")}</label>
-                  <input
-                    type="password"
-                    value={formData.rconPassword}
-                    onChange={(e) => setFormData({ ...formData, rconPassword: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={formData.rconPassword}
+                      onChange={(e) => setFormData({ ...formData, rconPassword: e.target.value })}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      title={t("servers.generate_password")}
+                      onClick={() => setFormData({ ...formData, rconPassword: generateRandomPassword() })}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition-colors flex items-center justify-center"
+                    >
+                      <Zap className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="mt-6 flex justify-end gap-3">
@@ -323,12 +342,22 @@ export default function ServersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.server_password")}</label>
-                    <input
-                      type="text"
-                      value={dynamicFormData.password}
-                      onChange={(e) => setDynamicFormData({ ...dynamicFormData, password: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={dynamicFormData.password}
+                        onChange={(e) => setDynamicFormData({ ...dynamicFormData, password: e.target.value })}
+                        className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        title={t("servers.generate_password")}
+                        onClick={() => setDynamicFormData({ ...dynamicFormData, password: generateRandomPassword() })}
+                        className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition-colors flex items-center justify-center"
+                      >
+                        <Zap className="w-5 h-5 text-emerald-400" />
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.max_players")}</label>
@@ -345,13 +374,23 @@ export default function ServersPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.rcon_password")}</label>
-                  <input
-                    type="password"
-                    value={dynamicFormData.rconPassword}
-                    onChange={(e) => setDynamicFormData({ ...dynamicFormData, rconPassword: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Auto-generated if empty"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={dynamicFormData.rconPassword}
+                      onChange={(e) => setDynamicFormData({ ...dynamicFormData, rconPassword: e.target.value })}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Auto-generated if empty"
+                    />
+                    <button
+                      type="button"
+                      title={t("servers.generate_password")}
+                      onClick={() => setDynamicFormData({ ...dynamicFormData, rconPassword: generateRandomPassword() })}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition-colors flex items-center justify-center"
+                    >
+                      <Zap className="w-5 h-5 text-emerald-400" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
