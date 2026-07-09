@@ -7,6 +7,7 @@ const en = {
     teams: "Teams",
     seasons: "Seasons",
     servers: "Servers",
+    presets: "Presets",
     plugins: "Plugins",
     theme_light: "Light",
     theme_dark: "Dark",

@@ -7,6 +7,7 @@ const pt = {
     teams: "Equipes",
     seasons: "Temporadas",
     servers: "Servidores",
+    presets: "Presets",
     plugins: "Plugins",
     theme_light: "Claro",
     theme_dark: "Escuro",

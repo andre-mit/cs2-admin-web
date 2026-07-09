@@ -25,6 +25,40 @@ This is the frontend project for the CS2 (Counter-Strike 2) administration panel
 - **Plugins Management:**
   - Create and configure plugins with custom config files in JSON or CFG formats.
   - Dynamically deploy servers with selected plugins and user-overriden configurations.
+- **Game Mode Presets:**
+  - Pre-configured dynamic server presets for Competitive, Surf, Bhop, Retakes, and more.
+  - Managed entirely via the **Presets Page** (`/dashboard/presets`), which talks to the C# Backend via the `ServerPreset` API.
+  - Automatic injection of recommended plugins (MatchZy, SurfTimer, etc.) and specific CVARs (`sv_airaccelerate`, `CS2_GAMEALIAS`, etc.) based on the selected mode.
+
+## How to Setup Custom Models, FastDL & Plugins
+The CS2 Admin panel supports a structured approach for deploying plugins and serving external assets (like custom player models, skins, and maps).
+
+### 1. Uploading Plugins & Custom Models
+1. Navigate to **Plugins** (`/dashboard/plugins`).
+2. Click **Add Plugin** to register a new plugin in the database.
+3. Click the upload button to send a `.zip` file for that plugin.
+4. **ZIP Structure:** Your ZIP can contain standard CounterStrikeSharp plugins OR custom assets. 
+   - *Example:* If you want to add custom player skins, your zip should have `models/`, `materials/`, etc., in the root of the ZIP.
+   - When the backend receives the ZIP, it parses it and places any `models/`, `materials/`, `sound/`, and `particles/` directly into the web server's **FastDL** directory.
+5. The remaining files (like `addons/counterstrikesharp`) go into the plugin's isolated overlay structure.
+
+### 2. Creating Database-Backed Presets
+To make your servers truly dynamic (like FACEIT, Surf, or Bhop), you use the Presets system.
+1. Navigate to **Presets** (`/dashboard/presets`).
+2. Click **Add Preset**.
+3. **Name:** e.g., `Surf (Tier 1-3)`.
+4. **Plugins Bundled:** Check all plugins that should load on this server (e.g., `SurfTimer`, `CustomSkins`).
+5. **Server Variables (CVARs):** Add game-specific configurations:
+   - `sv_airaccelerate` = `1000`
+   - `CS2_GAMEALIAS` = `casual`
+6. Click **Save Preset**.
+
+### 3. Deploying a Dynamic Server
+1. Go to **Servers** (`/dashboard/servers`).
+2. Click **Create Dynamic Server**.
+3. In the dropdown "Game Mode Preset", select your newly created Preset.
+4. The system automatically selects the linked plugins and injects the CVARs.
+5. Click **Create Server**. The backend will instantly spin up a Docker container layered with your custom models, inject `sv_downloadurl` for FastDL, and apply all CVARs. Clients connecting to this server will download your custom models automatically!
 
 ## Plugin Configuration Example (MatchZy)
 

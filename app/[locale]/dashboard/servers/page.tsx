@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { swrFetcher } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { presetsService, ServerPreset } from "@/services/presetsService";
 
 interface ServerStatus {
   loading: boolean;
@@ -28,9 +29,12 @@ const ADVANCED_VARIABLES = [
   { key: "CS2_GAMEALIAS", cvar: "CS2_GAMEALIAS", type: "text", descKey: "cs2_gamealias", default: "competitive" },
 ];
 
+// PRESETS will be loaded from API
+
 export default function ServersPage() {
   const { t } = useI18n();
   const { data: servers, error, isLoading, mutate } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
+  const { data: apiPresets = [] } = useSWR<ServerPreset[]>("/api/v1/presets", swrFetcher);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,12 +58,42 @@ export default function ServersPage() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [dynamicError, setDynamicError] = useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<number | "none">("none");
 
   useEffect(() => {
     if (isDynamicModalOpen) {
       pluginsService.getAllPlugins().then(setAvailablePlugins).catch(console.error);
     }
   }, [isDynamicModalOpen]);
+
+  const handlePresetChange = (presetId: string | number) => {
+    setSelectedPreset(presetId === "none" ? "none" : Number(presetId));
+    if (presetId === "none") {
+      setDynamicFormData(prev => ({
+        ...prev,
+        serverVariables: {},
+        pluginSelections: []
+      }));
+      return;
+    }
+    
+    const preset = apiPresets.find(p => p.id === Number(presetId));
+    if (!preset) return;
+    
+    const newSelections: PluginSelectionItem[] = [];
+    preset.pluginIds.forEach(pluginId => {
+      const matched = availablePlugins.find(p => p.id === pluginId);
+      if (matched) {
+        newSelections.push({ pluginId: matched.id, configOverridesJson: matched.configFilesJson });
+      }
+    });
+
+    setDynamicFormData(prev => ({
+      ...prev,
+      serverVariables: { ...preset.serverVariables },
+      pluginSelections: newSelections
+    }));
+  };
 
   const generateRandomPassword = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -95,6 +129,7 @@ export default function ServersPage() {
       const result = await serversService.createDynamic(dynamicFormData);
       setLastCreated(result);
       setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [], serverVariables: {} });
+      setSelectedPreset("none");
       setIsDynamicModalOpen(false);
       mutate();
     } catch (err: any) {
@@ -338,6 +373,19 @@ export default function ServersPage() {
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     placeholder={t("servers.server_name_placeholder")}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Game Mode Preset</label>
+                  <select
+                    value={selectedPreset}
+                    onChange={(e) => handlePresetChange(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="none">Custom / None</option>
+                    {apiPresets.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

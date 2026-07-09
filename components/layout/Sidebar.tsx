@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Globe, Puzzle, Key } from "lucide-react";
+import { Users, Server, Shield, Trophy, LayoutDashboard, Swords, Map as MapIcon, Globe, Puzzle, Key, Zap } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { key: "teams", href: "/dashboard/teams", icon: Users },
   { key: "seasons", href: "/dashboard/seasons", icon: Trophy },
   { key: "servers", href: "/dashboard/servers", icon: Server },
+  { key: "presets", href: "/dashboard/presets", icon: Zap },
   { key: "plugins", href: "/dashboard/plugins", icon: Puzzle },
   { key: "tokens", href: "/dashboard/tokens", icon: Key },
 ];
