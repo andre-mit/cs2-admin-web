@@ -57,6 +57,8 @@ export const serversService = {
   getStatus: (id: number) => fetchApi<ServerStatus>(`/api/v1/servers/${id}/status`),
 
   // Dynamic server management
+  updateBaseServer: () =>
+    fetchApi<{ message: string }>("/api/v1/servers/update-base", { method: "POST" }),
   createDynamic: (data: CreateDynamicServerRequest) =>
     fetchApi<DynamicServerResult>("/api/v1/servers/dynamic", {
       method: "POST",

@@ -37,6 +37,7 @@ export default function ServersPage() {
   const { data: apiPresets = [] } = useSWR<ServerPreset[]>("/api/v1/presets", swrFetcher);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
+  const [isUpdatingBase, setIsUpdatingBase] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ displayName: "", ipString: "", port: 27015, rconPassword: "" });
   const [dynamicFormData, setDynamicFormData] = useState<{
@@ -140,6 +141,21 @@ export default function ServersPage() {
     }
   };
 
+  const handleUpdateBase = async () => {
+    setIsUpdatingBase(true);
+    setDynamicError(null);
+    try {
+      const res = await serversService.updateBaseServer();
+      alert(res.message || t("servers.base_updated") || "Base updated successfully");
+      mutate();
+    } catch (err: any) {
+      console.error("Failed to update base server:", err);
+      alert(t("servers.operation_failed") || "An error occurred during update.");
+    } finally {
+      setIsUpdatingBase(false);
+    }
+  };
+
   const handleServerAction = async (serverId: number, action: "start" | "stop" | "restart") => {
     setActionLoading(prev => ({ ...prev, [serverId]: action }));
     try {
@@ -214,6 +230,14 @@ export default function ServersPage() {
           <p className="text-slate-400 mt-1">{t("servers.description")}</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleUpdateBase}
+            disabled={isUpdatingBase}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-600/50 text-white font-medium rounded-lg transition-colors"
+          >
+            {isUpdatingBase ? <Loader2 className="w-5 h-5 animate-spin" /> : <RotateCcw className="w-5 h-5" />}
+            {isUpdatingBase ? (t("servers.updating_base") || "Updating...") : (t("servers.update_base") || "Update Base Game")}
+          </button>
           <button
             onClick={() => setIsDynamicModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
