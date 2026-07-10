@@ -44,6 +44,7 @@ export default function PluginsPage() {
 ]`);
   const [newFile, setNewFile] = useState<File | null>(null);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
 
@@ -58,7 +59,17 @@ export default function PluginsPage() {
       });
 
       if (newFile && created.id) {
-        await pluginsService.uploadPluginZip(created.id, newFile);
+        setUploadProgress((prev) => ({ ...prev, [created.id]: 0 }));
+        setUploadingId(created.id);
+        await pluginsService.uploadPluginZip(created.id, newFile, (progress) => {
+          setUploadProgress((prev) => ({ ...prev, [created.id]: progress }));
+        });
+        setUploadingId(null);
+        setUploadProgress((prev) => {
+          const next = { ...prev };
+          delete next[created.id];
+          return next;
+        });
       }
 
       setNewName("");
@@ -117,14 +128,22 @@ export default function PluginsPage() {
     if (!file) return;
 
     setUploadingId(id);
+    setUploadProgress((prev) => ({ ...prev, [id]: 0 }));
     try {
-      await pluginsService.uploadPluginZip(id, file);
+      await pluginsService.uploadPluginZip(id, file, (progress) => {
+        setUploadProgress((prev) => ({ ...prev, [id]: progress }));
+      });
       alert(t("plugins.zip_uploaded"));
     } catch (error) {
       console.error(error);
       alert("Error uploading zip");
     } finally {
       setUploadingId(null);
+      setUploadProgress((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       e.target.value = "";
     }
   };
@@ -254,10 +273,16 @@ export default function PluginsPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-4 bg-slate-900 border-t border-slate-700">
-                <label className="flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-md cursor-pointer transition-colors border border-slate-700">
+              <div className="p-4 bg-slate-900 border-t border-slate-700 relative overflow-hidden">
+                {uploadProgress[plugin.id] !== undefined && (
+                  <div
+                    className="absolute top-0 left-0 h-full bg-emerald-600/20 transition-all duration-300 pointer-events-none"
+                    style={{ width: `${uploadProgress[plugin.id]}%` }}
+                  />
+                )}
+                <label className="flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-md cursor-pointer transition-colors border border-slate-700 relative z-10">
                   {uploadingId === plugin.id ? (
-                    <span className="animate-pulse">{t("plugins.uploading")}</span>
+                    <span className="animate-pulse">{t("plugins.uploading")} {uploadProgress[plugin.id]}%</span>
                   ) : (
                     <>
                       <Upload className="w-4 h-4" />

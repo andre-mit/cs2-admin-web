@@ -28,14 +28,32 @@ export const pluginsService = {
     });
   },
 
-  async uploadPluginZip(id: number, file: File) {
-    const formData = new FormData();
-    formData.append("file", file);
+  async uploadPluginZip(id: number, file: File, onProgress?: (percentage: number) => void) {
+    const chunkSize = 5 * 1024 * 1024; // 5MB chunks
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    let result: GamePlugin | undefined;
 
-    return fetchApi<GamePlugin>(`/api/v1/plugins/${id}/upload`, {
-      method: "POST",
-      body: formData
-    });
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * chunkSize;
+      const end = Math.min(start + chunkSize, file.size);
+      const chunk = file.slice(start, end);
+
+      const formData = new FormData();
+      formData.append("file", chunk, file.name);
+      formData.append("chunkIndex", i.toString());
+      formData.append("totalChunks", totalChunks.toString());
+
+      result = await fetchApi<GamePlugin>(`/api/v1/plugins/${id}/upload-chunk`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (onProgress) {
+        onProgress(Math.round(((i + 1) / totalChunks) * 100));
+      }
+    }
+
+    return result as GamePlugin;
   },
 
   async deletePlugin(id: number) {
