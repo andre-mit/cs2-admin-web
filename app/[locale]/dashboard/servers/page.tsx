@@ -10,6 +10,7 @@ import { swrFetcher } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { presetsService, ServerPreset } from "@/services/presetsService";
+import { getAuthToken } from "@/services/apiClient";
 
 interface ServerStatus {
   loading: boolean;
@@ -60,6 +61,11 @@ export default function ServersPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [dynamicError, setDynamicError] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<number | "none">("none");
+
+  const [baseUpdateStatus, setBaseUpdateStatus] = useState<string | null>(null);
+  const [baseUpdateProgress, setBaseUpdateProgress] = useState<number>(0);
+  const [baseUpdateDownloadedBytes, setBaseUpdateDownloadedBytes] = useState<string>("");
+  const [baseUpdateTotalBytes, setBaseUpdateTotalBytes] = useState<string>("");
 
   useEffect(() => {
     if (isDynamicModalOpen) {
@@ -144,14 +150,45 @@ export default function ServersPage() {
   const handleUpdateBase = async () => {
     setIsUpdatingBase(true);
     setDynamicError(null);
+    setBaseUpdateStatus(null);
+    setBaseUpdateProgress(0);
+    
     try {
+      const token = await getAuthToken();
+      if (!token) throw new Error("Unauthorized");
+      
       const res = await serversService.updateBaseServer();
-      alert(res.message || t("servers.base_updated") || "Base updated successfully");
-      mutate();
+      // Start SSE listening
+      const sse = serversService.getUpdateBaseStream(
+        token,
+        (data) => {
+          setBaseUpdateStatus(data.status);
+          setBaseUpdateProgress(data.progressPercentage);
+          setBaseUpdateDownloadedBytes(data.downloadedBytes);
+          setBaseUpdateTotalBytes(data.totalBytes);
+          
+          if (!data.isUpdating) {
+            sse.close();
+            setIsUpdatingBase(false);
+            setBaseUpdateStatus(null);
+            mutate();
+          }
+        },
+        (err) => {
+          console.error("SSE Error:", err);
+          sse.close();
+          setIsUpdatingBase(false);
+          setBaseUpdateStatus(null);
+        }
+      );
+      
     } catch (err: any) {
-      console.error("Failed to update base server:", err);
-      alert(t("servers.operation_failed") || "An error occurred during update.");
-    } finally {
+      console.error("Failed to start base update:", err);
+      if (err.message && err.message.includes("already in progress")) {
+        alert("Update is already in progress.");
+      } else {
+        alert(t("servers.operation_failed") || "An error occurred during update.");
+      }
       setIsUpdatingBase(false);
     }
   };
@@ -254,6 +291,24 @@ export default function ServersPage() {
           </button>
         </div>
       </div>
+
+      {isUpdatingBase && (
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 mt-6">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-semibold text-white">Updating Base Game...</h3>
+            <span className="text-xs text-slate-400 uppercase tracking-wider">{baseUpdateStatus || "INITIALIZING"}</span>
+          </div>
+          <div className="w-full bg-slate-900 rounded-full h-2.5 mb-2 overflow-hidden">
+            <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out" style={{ width: `${baseUpdateProgress}%` }}></div>
+          </div>
+          <div className="flex justify-between text-xs text-slate-400">
+            <span>{baseUpdateProgress.toFixed(1)}%</span>
+            {baseUpdateDownloadedBytes && baseUpdateTotalBytes && (
+              <span>{(parseInt(baseUpdateDownloadedBytes) / 1024 / 1024).toFixed(1)} MB / {(parseInt(baseUpdateTotalBytes) / 1024 / 1024).toFixed(1)} MB</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Last created dynamic server banner */}
       {lastCreated && (

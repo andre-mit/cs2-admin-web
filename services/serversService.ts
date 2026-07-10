@@ -56,9 +56,32 @@ export const serversService = {
   }),
   getStatus: (id: number) => fetchApi<ServerStatus>(`/api/v1/servers/${id}/status`),
 
-  // Dynamic server management
   updateBaseServer: () =>
-    fetchApi<{ message: string }>("/api/v1/servers/update-base", { method: "POST" }),
+    fetchApi<{ message: string }>("/api/v1/servers/update-base", {
+      method: "POST",
+    }),
+
+  getUpdateBaseStream: (token: string, onMessage: (data: any) => void, onError: (err: any) => void) => {
+    const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1/servers/update-base-stream?access_token=${token}`;
+    const eventSource = new EventSource(url);
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessage(data);
+      } catch (err) {
+        onError(err);
+      }
+    };
+    
+    eventSource.onerror = (err) => {
+      onError(err);
+    };
+    
+    return eventSource;
+  },
+
+  // Dynamic server management
   createDynamic: (data: CreateDynamicServerRequest) =>
     fetchApi<DynamicServerResult>("/api/v1/servers/dynamic", {
       method: "POST",
