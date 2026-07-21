@@ -28,7 +28,7 @@ function FileTreeNode({
     return (
       <div 
         className={`flex items-center gap-2 py-1 px-2 cursor-pointer hover:bg-slate-700/50 rounded-sm ${isSelected ? 'bg-slate-700/80 text-emerald-400' : 'text-slate-300'}`}
-        style={{ paddingLeft: \`\${depth * 12 + 8}px\` }}
+        style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={() => onSelect(node.path)}
       >
         <File className="w-4 h-4 shrink-0" />
@@ -42,7 +42,7 @@ function FileTreeNode({
       {node.name && (
         <div 
           className="flex items-center gap-1 py-1 px-2 cursor-pointer hover:bg-slate-700/50 rounded-sm text-slate-200"
-          style={{ paddingLeft: \`\${(depth - 1) * 12 + 8}px\` }}
+          style={{ paddingLeft: `${(depth - 1) * 12 + 8}px` }}
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
