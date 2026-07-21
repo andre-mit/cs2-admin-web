@@ -30,9 +30,7 @@ export function I18nProvider({
   const setLocale = (newLocale: string) => {
     if (!pathname) return;
     const segments = pathname.split('/');
-    // segments[0] is "", segments[1] is the current locale "en" or "pt"
     segments[1] = newLocale;
-    // Push the new URL and let the server re-render with the new dictionary
     router.push(segments.join('/'));
   };
 

@@ -8,6 +8,13 @@ export interface ConfigFileDefinition {
   defaultContent?: unknown;
 }
 
+export interface FileNode {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: FileNode[];
+}
+
 export interface GamePlugin {
   id: number;
   name: string;
@@ -24,6 +31,13 @@ export const pluginsService = {
   async createPlugin(plugin: Partial<GamePlugin>) {
     return fetchApi<GamePlugin>("/api/v1/plugins", {
       method: "POST",
+      body: JSON.stringify(plugin),
+    });
+  },
+
+  async updatePlugin(id: number, plugin: Partial<GamePlugin>) {
+    return fetchApi<GamePlugin>(`/api/v1/plugins/${id}`, {
+      method: "PUT",
       body: JSON.stringify(plugin),
     });
   },
@@ -58,6 +72,27 @@ export const pluginsService = {
 
   async deletePlugin(id: number) {
     return fetchApi<void>(`/api/v1/plugins/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  async getFileTree(id: number) {
+    return fetchApi<FileNode>(`/api/v1/plugins/${id}/files`);
+  },
+
+  async getFileContent(id: number, path: string) {
+    return fetchApi<{ content: string }>(`/api/v1/plugins/${id}/file?path=${encodeURIComponent(path)}`);
+  },
+
+  async saveFileContent(id: number, path: string, content: string) {
+    return fetchApi<void>(`/api/v1/plugins/${id}/file`, {
+      method: "POST",
+      body: JSON.stringify({ path, content }),
+    });
+  },
+
+  async deleteFile(id: number, path: string) {
+    return fetchApi<void>(`/api/v1/plugins/${id}/file?path=${encodeURIComponent(path)}`, {
       method: "DELETE",
     });
   },

@@ -222,7 +222,6 @@ export default function MapsPage() {
               )}
             </div>
 
-            {/* Badge Image */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-sm font-medium text-slate-400">{t("maps.badge_image")} <span className="text-slate-600">{t("maps.optional")}</span></label>
