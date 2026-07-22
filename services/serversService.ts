@@ -108,6 +108,38 @@ export const serversService = {
     return eventSource;
   },
 
+  getGlobalEventsStream: (token: string, onMessage: (event: { type: string, data: any }) => void, onError: (err: any) => void) => {
+    const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1/servers/events?access_token=${token}`;
+    const eventSource = new EventSource(url);
+    
+    // Default message handler
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessage({ type: event.type, data });
+      } catch (err) {
+        console.error("Failed to parse SSE event data", err);
+      }
+    };
+    
+    // Custom event handlers
+    const handleEvent = (event: MessageEvent) => {
+        try {
+            const data = JSON.parse(event.data);
+            onMessage({ type: event.type, data });
+        } catch (err) {}
+    };
+
+    eventSource.addEventListener("status_change", handleEvent);
+    eventSource.addEventListener("server_list_changed", handleEvent);
+    
+    eventSource.onerror = (err) => {
+      onError(err);
+    };
+    
+    return eventSource;
+  },
+
   // Dynamic server management
   createDynamic: (data: CreateDynamicServerRequest) =>
     fetchApi<DynamicServerResult>("/api/v1/servers/dynamic", {

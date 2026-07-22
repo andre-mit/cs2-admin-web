@@ -258,15 +258,45 @@ export default function ServersPage() {
   useEffect(() => {
     if (!servers || servers.length === 0) return;
     
-    // Initial fetch for all
+    // Initial fetch for all existing servers
     servers.forEach(s => fetchHealth(s.id));
     
-    // Poll every 10 seconds
-    const interval = setInterval(() => {
-      servers.forEach(s => fetchHealth(s.id));
-    }, 10000);
-    
-    return () => clearInterval(interval);
+    let eventSource: EventSource | null = null;
+
+    const connectEvents = async () => {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      eventSource = serversService.getGlobalEventsStream(
+        token,
+        (event) => {
+          if (event.type === "status_change") {
+            setHealthMap(prev => ({ 
+              ...prev, 
+              [event.data.serverId]: { 
+                status: event.data.status, 
+                isDynamic: event.data.isDynamic, 
+                loading: false 
+              } 
+            }));
+          } else if (event.type === "server_list_changed") {
+            // Trigger an SWR revalidation to fetch new/deleted servers
+            mutate();
+          }
+        },
+        (err) => {
+          console.error("SSE Global Events Error", err);
+        }
+      );
+    };
+
+    connectEvents();
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
   }, [servers]);
 
   const getStatusIndicator = (serverId: number) => {
