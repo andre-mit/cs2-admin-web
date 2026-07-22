@@ -104,6 +104,8 @@ const en = {
     save: "Save",
     workshop: "Workshop",
     official: "Official",
+    official_maps: "Official Maps",
+    community_maps: "Community Maps",
     no_maps: "No maps registered. Add one by clicking the button above.",
     confirm_delete: "Are you sure you want to delete this map?",
     delete_failed: "Failed to delete map.",
@@ -150,8 +152,10 @@ const en = {
     stop: "Stop",
     restart: "Restart",
     delete_dynamic: "Delete",
+    confirm_delete_dynamic_title: "Delete Dynamic Server",
     confirm_delete_dynamic: "Are you sure you want to delete this dynamic server? The container will be removed.",
     connect: "Connect",
+    generate_password: "Generate Password",
     connect_url: "Connect URL",
     copied: "Copied!",
     starting: "Starting...",
@@ -296,7 +300,13 @@ const en = {
     relative_path: "Relative Path",
     format: "Format",
     default_content: "Default Content (JSON)",
-    zip_uploaded: "Plugin ZIP uploaded successfully!"
+    zip_uploaded: "Plugin ZIP uploaded successfully!",
+    open_editor: "Open Editor",
+    unsaved_changes: "Unsaved changes",
+    file_saved: "File saved",
+    back: "Back",
+    new_file: "New File",
+    explorer: "Explorer"
   }
 };
 

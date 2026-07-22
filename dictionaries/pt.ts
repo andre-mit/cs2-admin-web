@@ -104,6 +104,8 @@ const pt = {
     save: "Salvar",
     workshop: "Oficina",
     official: "Oficial",
+    official_maps: "Mapas Oficiais",
+    community_maps: "Mapas da Comunidade / Oficina",
     no_maps: "Nenhum mapa registrado. Adicione um clicando no botão acima.",
     confirm_delete: "Tem certeza de que deseja excluir este mapa?",
     delete_failed: "Falha ao excluir o mapa.",
@@ -150,8 +152,10 @@ const pt = {
     stop: "Parar",
     restart: "Reiniciar",
     delete_dynamic: "Excluir",
+    confirm_delete_dynamic_title: "Excluir Servidor Dinâmico",
     confirm_delete_dynamic: "Tem certeza de que deseja excluir este servidor dinâmico? O container será removido.",
     connect: "Conectar",
+    generate_password: "Gerar Senha",
     connect_url: "URL de Conexão",
     copied: "Copiado!",
     starting: "Iniciando...",
@@ -296,7 +300,13 @@ const pt = {
     relative_path: "Caminho Relativo",
     format: "Formato",
     default_content: "Conteúdo Padrão (JSON)",
-    zip_uploaded: "ZIP do Plugin enviado com sucesso!"
+    zip_uploaded: "ZIP do Plugin enviado com sucesso!",
+    open_editor: "Abrir Editor",
+    unsaved_changes: "Alterações não salvas",
+    file_saved: "Arquivo salvo",
+    back: "Voltar",
+    new_file: "Novo Arquivo",
+    explorer: "Explorador"
   }
 };
 
