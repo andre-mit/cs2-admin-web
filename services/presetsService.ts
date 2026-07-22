@@ -4,6 +4,8 @@ export interface ServerPreset {
   id: number;
   name: string;
   description?: string;
+  customCfg?: string;
+  customCfgName?: string;
   serverVariables: Record<string, string>;
   pluginIds: number[];
 }

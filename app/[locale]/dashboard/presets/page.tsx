@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash, Zap, X } from "lucide-react";
+import { Plus, Trash, Zap, X, Upload } from "lucide-react";
 import useSWR from "swr";
 import { useI18n } from "@/contexts/I18nContext";
 import { ServerPreset, presetsService } from "@/services/presetsService";
 import { pluginsService, GamePlugin } from "@/services/pluginsService";
 import { swrFetcher } from "@/services/apiClient";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import Editor from "@monaco-editor/react";
+import { useRef } from "react";
 
 export default function PresetsPage() {
   const { t } = useI18n();
@@ -19,6 +21,9 @@ export default function PresetsPage() {
   const [newDesc, setNewDesc] = useState("");
   const [newServerVariables, setNewServerVariables] = useState<Record<string, string>>({});
   const [newPluginIds, setNewPluginIds] = useState<number[]>([]);
+  const [newCustomCfg, setNewCustomCfg] = useState("");
+  const [newCustomCfgName, setNewCustomCfgName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [customVarKey, setCustomVarKey] = useState("");
   const [customVarValue, setCustomVarValue] = useState("");
@@ -35,12 +40,16 @@ export default function PresetsPage() {
       await presetsService.createPreset({
         name: newName,
         description: newDesc,
+        customCfg: newCustomCfg,
+        customCfgName: newCustomCfgName,
         serverVariables: newServerVariables,
         pluginIds: newPluginIds,
       });
 
       setNewName("");
       setNewDesc("");
+      setNewCustomCfg("");
+      setNewCustomCfgName("");
       setNewServerVariables({});
       setNewPluginIds([]);
       setIsCreating(false);
@@ -63,6 +72,27 @@ export default function PresetsPage() {
       alert("Error deleting preset");
     } finally {
       setDeleteConfirmId(null);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setNewCustomCfg(content);
+      // Auto fill name if empty
+      if (!newCustomCfgName) {
+        const nameWithoutExt = file.name.replace(/\.cfg$/i, '');
+        setNewCustomCfgName(nameWithoutExt);
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -212,6 +242,52 @@ export default function PresetsPage() {
               </div>
             </div>
 
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-slate-300">Custom CFG</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept=".cfg,.txt,.ini"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-md text-sm transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload File
+                  </button>
+                </div>
+              </div>
+              <div className="mb-3">
+                <input
+                  type="text"
+                  placeholder="Filename (defaults to 'custom')"
+                  value={newCustomCfgName}
+                  onChange={e => setNewCustomCfgName(e.target.value)}
+                  className="w-full md:w-1/2 bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              <div className="border border-slate-700 rounded-md overflow-hidden">
+                <Editor
+                  height="200px"
+                  defaultLanguage="ini"
+                  theme="vs-dark"
+                  value={newCustomCfg}
+                  onChange={(val) => setNewCustomCfg(val || "")}
+                  options={{
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    fontSize: 13,
+                  }}
+                />
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
@@ -260,7 +336,14 @@ export default function PresetsPage() {
                   </div>
                 )}
 
-                {Object.keys(preset.serverVariables).length > 0 && (
+                {preset.customCfg && (
+                  <div className="mb-4">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Custom CFG</h4>
+                    <p className="text-sm text-slate-300">{preset.customCfgName || "custom"}.cfg</p>
+                  </div>
+                )}
+
+                {Object.keys(preset.serverVariables || {}).length > 0 && (
                   <div>
                     <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Variables</h4>
                     <div className="bg-slate-900 p-2 rounded border border-slate-700 max-h-32 overflow-y-auto custom-scrollbar">
