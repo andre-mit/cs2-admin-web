@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash, Zap, X, Upload } from "lucide-react";
+import { Plus, Trash, Zap, X, Upload, Edit } from "lucide-react";
 import useSWR from "swr";
 import { useI18n } from "@/contexts/I18nContext";
 import { ServerPreset, presetsService } from "@/services/presetsService";
@@ -18,7 +18,8 @@ export default function PresetsPage() {
   const { data: apiMaps = [] } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const [availablePlugins, setAvailablePlugins] = useState<GamePlugin[]>([]);
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newServerVariables, setNewServerVariables] = useState<Record<string, string>>({});
@@ -41,18 +42,23 @@ export default function PresetsPage() {
     pluginsService.getAllPlugins().then(setAvailablePlugins).catch(console.error);
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setIsCreating(true);
-      await presetsService.createPreset({
+      const payload = {
         name: newName,
         description: newDesc,
         customCfg: newCustomCfg,
         customCfgName: newCustomCfgName,
         serverVariables: newServerVariables,
         pluginIds: newPluginIds,
-      });
+      };
+
+      if (editingId !== null) {
+        await presetsService.updatePreset(editingId, payload);
+      } else {
+        await presetsService.createPreset(payload);
+      }
 
       setNewName("");
       setNewDesc("");
@@ -60,14 +66,24 @@ export default function PresetsPage() {
       setNewCustomCfgName("");
       setNewServerVariables({});
       setNewPluginIds([]);
-      setIsCreating(false);
+      setEditingId(null);
+      setIsFormOpen(false);
       mutate();
     } catch (error) {
       console.error(error);
-      alert("Error creating preset");
-    } finally {
-      setIsCreating(false);
+      alert(editingId !== null ? "Error updating preset" : "Error creating preset");
     }
+  };
+
+  const handleEdit = (preset: ServerPreset) => {
+    setEditingId(preset.id);
+    setNewName(preset.name);
+    setNewDesc(preset.description || "");
+    setNewCustomCfg(preset.customCfg || "");
+    setNewCustomCfgName(preset.customCfgName || "");
+    setNewServerVariables(preset.serverVariables || {});
+    setNewPluginIds(preset.pluginIds || []);
+    setIsFormOpen(true);
   };
 
   const handleDelete = async () => {
@@ -119,7 +135,16 @@ export default function PresetsPage() {
           <p className="text-slate-400 mt-2">Manage dynamic server presets and bundle configurations.</p>
         </div>
         <button
-          onClick={() => setIsCreating(true)}
+          onClick={() => {
+            setEditingId(null);
+            setNewName("");
+            setNewDesc("");
+            setNewCustomCfg("");
+            setNewCustomCfgName("");
+            setNewServerVariables({});
+            setNewPluginIds([]);
+            setIsFormOpen(true);
+          }}
           className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -127,10 +152,10 @@ export default function PresetsPage() {
         </button>
       </div>
 
-      {isCreating && (
+      {isFormOpen && (
         <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8">
-          <h2 className="text-xl font-bold text-white mb-4">New Preset</h2>
-          <form onSubmit={handleCreate} className="space-y-4">
+          <h2 className="text-xl font-bold text-white mb-4">{editingId !== null ? "Edit Preset" : "New Preset"}</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -344,7 +369,10 @@ export default function PresetsPage() {
             <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => setIsCreating(false)}
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setEditingId(null);
+                }}
                 className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
               >
                 Cancel
@@ -373,12 +401,20 @@ export default function PresetsPage() {
               <div className="p-5 flex-1">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-lg font-bold text-white">{preset.name}</h3>
-                  <button
-                    onClick={() => setDeleteConfirmId(preset.id)}
-                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-md transition-colors"
-                  >
-                    <Trash className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleEdit(preset)}
+                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-700 rounded-md transition-colors"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(preset.id)}
+                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-md transition-colors"
+                    >
+                      <Trash className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
                 {preset.description && <p className="text-sm text-slate-400 mb-4">{preset.description}</p>}
 
