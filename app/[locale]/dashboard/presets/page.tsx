@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { useI18n } from "@/contexts/I18nContext";
 import { ServerPreset, presetsService } from "@/services/presetsService";
 import { pluginsService, GamePlugin } from "@/services/pluginsService";
+import { GameMap } from "@/services/mapsService";
 import { swrFetcher } from "@/services/apiClient";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import Editor from "@monaco-editor/react";
@@ -14,6 +15,7 @@ import { useRef } from "react";
 export default function PresetsPage() {
   const { t } = useI18n();
   const { data: presets = [], isLoading, mutate } = useSWR<ServerPreset[]>("/api/v1/presets", swrFetcher);
+  const { data: apiMaps = [] } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const [availablePlugins, setAvailablePlugins] = useState<GamePlugin[]>([]);
 
   const [isCreating, setIsCreating] = useState(false);
@@ -28,6 +30,12 @@ export default function PresetsPage() {
   const [customVarKey, setCustomVarKey] = useState("");
   const [customVarValue, setCustomVarValue] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [mapCategoryFilter, setMapCategoryFilter] = useState<string>("all");
+
+  const allMapCategories = Array.from(new Set(apiMaps.flatMap(m => m.categories || []))).sort();
+  const filteredMaps = mapCategoryFilter === "all" 
+      ? apiMaps 
+      : apiMaps.filter(m => (m.categories || []).includes(mapCategoryFilter));
 
   useEffect(() => {
     pluginsService.getAllPlugins().then(setAvailablePlugins).catch(console.error);
@@ -181,6 +189,51 @@ export default function PresetsPage() {
             <div className="mt-4 pt-4 border-t border-slate-700">
               <label className="block text-sm font-medium text-slate-300 mb-2">Server Variables (CVARs)</label>
               
+              <div className="flex gap-2 items-center mb-4">
+                <select
+                  value={mapCategoryFilter}
+                  onChange={(e) => setMapCategoryFilter(e.target.value)}
+                  className="w-1/3 bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-slate-300 text-sm focus:outline-none focus:border-amber-500"
+                >
+                  <option value="all">All Categories</option>
+                  {allMapCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <select
+                  value="none"
+                  onChange={(e) => {
+                    const mapId = e.target.value;
+                    if (mapId === "none") return;
+                    const map = apiMaps.find(m => m.id.toString() === mapId);
+                    if (map) {
+                       const newVars = { ...newServerVariables };
+                       if (map.isCommunity) {
+                           newVars["CS2_HOST_WORKSHOP_MAP"] = map.identifier;
+                           delete newVars["CS2_STARTMAP"];
+                       } else {
+                           newVars["CS2_STARTMAP"] = map.identifier;
+                           delete newVars["CS2_HOST_WORKSHOP_MAP"];
+                       }
+                       setNewServerVariables(newVars);
+                    }
+                  }}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-white text-sm focus:outline-none focus:border-amber-500"
+                >
+                  <option value="none">Quick Add Map...</option>
+                  <optgroup label="Standard Maps">
+                    {filteredMaps.filter(m => !m.isCommunity).map(m => (
+                      <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Workshop Maps">
+                    {filteredMaps.filter(m => m.isCommunity).map(m => (
+                      <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
               <div className="space-y-2 mb-4">
                 {Object.entries(newServerVariables).map(([k, v]) => (
                   <div key={k} className="flex gap-2 items-center">

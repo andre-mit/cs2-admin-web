@@ -11,6 +11,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { presetsService, ServerPreset } from "@/services/presetsService";
 import { getAuthToken } from "@/services/apiClient";
+import { GameMap } from "@/services/mapsService";
 
 interface ServerStatus {
   loading: boolean;
@@ -28,6 +29,8 @@ const ADVANCED_VARIABLES = [
   { key: "CS2_LOG_DETAIL", cvar: "mp_logdetail", type: "number", descKey: "mp_logdetail", default: "3" },
   { key: "CS2_STARTMAP", cvar: "CS2_STARTMAP", type: "text", descKey: "cs2_startmap", default: "de_inferno" },
   { key: "CS2_GAMEALIAS", cvar: "CS2_GAMEALIAS", type: "text", descKey: "cs2_gamealias", default: "competitive" },
+  { key: "CS2_HOST_WORKSHOP_MAP", cvar: "CS2_HOST_WORKSHOP_MAP", type: "text", descKey: "cs2_host_workshop_map", default: "" },
+  { key: "CS2_HOST_WORKSHOP_COLLECTION", cvar: "CS2_HOST_WORKSHOP_COLLECTION", type: "text", descKey: "cs2_host_workshop_collection", default: "" },
 ];
 
 // PRESETS will be loaded from API
@@ -36,6 +39,7 @@ export default function ServersPage() {
   const { t } = useI18n();
   const { data: servers, error, isLoading, mutate } = useSWR<CS2Server[]>("/api/v1/servers", swrFetcher);
   const { data: apiPresets = [] } = useSWR<ServerPreset[]>("/api/v1/presets", swrFetcher);
+  const { data: apiMaps = [] } = useSWR<GameMap[]>("/api/v1/maps", swrFetcher);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
   const [isUpdatingBase, setIsUpdatingBase] = useState(false);
@@ -61,6 +65,12 @@ export default function ServersPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [dynamicError, setDynamicError] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<number | "none">("none");
+  const [mapCategoryFilter, setMapCategoryFilter] = useState<string>("all");
+
+  const allMapCategories = Array.from(new Set(apiMaps.flatMap(m => m.categories || []))).sort();
+  const filteredMaps = mapCategoryFilter === "all" 
+      ? apiMaps 
+      : apiMaps.filter(m => (m.categories || []).includes(mapCategoryFilter));
 
   const [baseUpdateStatus, setBaseUpdateStatus] = useState<string | null>(null);
   const [baseUpdateProgress, setBaseUpdateProgress] = useState<number>(0);
@@ -467,6 +477,61 @@ export default function ServersPage() {
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Filter Map Category</label>
+                    <select
+                      value={mapCategoryFilter}
+                      onChange={(e) => setMapCategoryFilter(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="all">All Categories</option>
+                      {allMapCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Start Map</label>
+                  <select
+                    onChange={(e) => {
+                      const mapId = e.target.value;
+                      if (mapId === "none") {
+                         const newVars = { ...dynamicFormData.serverVariables };
+                         delete newVars["CS2_STARTMAP"];
+                         delete newVars["CS2_HOST_WORKSHOP_MAP"];
+                         setDynamicFormData({ ...dynamicFormData, serverVariables: newVars });
+                         return;
+                      }
+                      const map = apiMaps.find(m => m.id.toString() === mapId);
+                      if (map) {
+                         const newVars = { ...dynamicFormData.serverVariables };
+                         if (map.isCommunity) {
+                             newVars["CS2_HOST_WORKSHOP_MAP"] = map.identifier;
+                             delete newVars["CS2_STARTMAP"];
+                         } else {
+                             newVars["CS2_STARTMAP"] = map.identifier;
+                             delete newVars["CS2_HOST_WORKSHOP_MAP"];
+                         }
+                         setDynamicFormData({ ...dynamicFormData, serverVariables: newVars });
+                      }
+                    }}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="none">Default / From Preset</option>
+                    <optgroup label="Standard Maps">
+                      {filteredMaps.filter(m => !m.isCommunity).map(m => (
+                        <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Workshop Maps">
+                      {filteredMaps.filter(m => m.isCommunity).map(m => (
+                        <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.server_password")}</label>
                     <div className="flex gap-2">

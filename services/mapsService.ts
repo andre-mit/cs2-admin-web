@@ -7,6 +7,7 @@ export interface GameMap {
   isCommunity: boolean;
   imageUrl: string;
   badgeUrl: string | null;
+  categories: string[];
 }
 
 export const mapsService = {

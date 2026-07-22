@@ -176,7 +176,9 @@ const pt = {
       mp_logmoney: "Registrar dinheiro no log (0 ou 1)",
       mp_logdetail: "Registrar dano de combate no log (0=desligado, 1=inimigo, 2=aliado, 3=todos)",
       cs2_startmap: "Mapa inicial ao carregar",
-      cs2_gamealias: "Alias do tipo de jogo (competitive, casual)"
+      cs2_gamealias: "Alias do tipo de jogo (competitive, casual)",
+      cs2_host_workshop_map: "ID do mapa da oficina para baixar/iniciar (Workshop)",
+      cs2_host_workshop_collection: "ID da coleção da oficina para baixar (Workshop)"
     }
   },
   teams: {

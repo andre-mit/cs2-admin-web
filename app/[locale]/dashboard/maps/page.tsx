@@ -9,6 +9,7 @@ import { mapsService, GameMap } from "@/services/mapsService";
 import { swrFetcher, API_BASE_URL, getAuthToken } from "@/services/apiClient";
 import { useI18n } from "@/contexts/I18nContext";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import CreatableSelect from 'react-select/creatable';
 
 type ImageMode = "url" | "upload";
 
@@ -72,8 +73,11 @@ export default function MapsPage() {
     identifier: "",
     isCommunity: false,
     imageUrl: "",
-    badgeUrl: null
+    badgeUrl: null,
+    categories: []
   });
+
+  const allCategories = Array.from(new Set(maps.flatMap(m => m.categories || []))).map(c => ({ value: c, label: c }));
 
   const [bgMode, setBgMode] = useState<ImageMode>("url");
   const [badgeMode, setBadgeMode] = useState<ImageMode>("url");
@@ -116,7 +120,7 @@ export default function MapsPage() {
     }
 
     setIsEditing(false);
-    setCurrentMap({ displayName: "", identifier: "", isCommunity: false, imageUrl: "", badgeUrl: null });
+    setCurrentMap({ displayName: "", identifier: "", isCommunity: false, imageUrl: "", badgeUrl: null, categories: [] });
     fetchMaps();
   };
 
@@ -142,7 +146,7 @@ export default function MapsPage() {
   };
 
   const openNew = () => {
-    setCurrentMap({ displayName: "", identifier: "", isCommunity: false, imageUrl: "", badgeUrl: null });
+    setCurrentMap({ displayName: "", identifier: "", isCommunity: false, imageUrl: "", badgeUrl: null, categories: [] });
     setBgMode("url");
     setBadgeMode("url");
     setIsEditing(true);
@@ -186,6 +190,27 @@ export default function MapsPage() {
                   onChange={e => setCurrentMap({...currentMap, identifier: e.target.value})}
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">Categorias</label>
+              <CreatableSelect
+                isMulti
+                options={allCategories}
+                value={(currentMap.categories || []).map(c => ({ value: c, label: c }))}
+                onChange={(newVal) => setCurrentMap({...currentMap, categories: newVal.map(v => v.value)})}
+                placeholder="Selecione ou crie novas categorias..."
+                formatCreateLabel={(inputValue) => `Criar "${inputValue}"`}
+                styles={{
+                   control: (base) => ({ ...base, backgroundColor: '#020617', borderColor: '#1e293b', color: 'white' }),
+                   menu: (base) => ({ ...base, backgroundColor: '#020617', border: '1px solid #1e293b' }),
+                   option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1e293b' : 'transparent', color: 'white' }),
+                   multiValue: (base) => ({ ...base, backgroundColor: '#4f46e5' }),
+                   multiValueLabel: (base) => ({ ...base, color: 'white' }),
+                   multiValueRemove: (base) => ({ ...base, color: 'white', ':hover': { backgroundColor: '#4338ca', color: 'white' } }),
+                   input: (base) => ({ ...base, color: 'white' })
+                }}
+              />
             </div>
 
             <div>
@@ -306,6 +331,14 @@ export default function MapsPage() {
                   <h3 className="font-bold text-lg">{map.displayName}</h3>
                   <p className="text-slate-400 text-sm font-mono">{map.identifier}</p>
                   
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {(map.categories || []).map(cat => (
+                      <span key={cat} className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-xs border border-slate-700">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+
                   <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4">
                     <button onClick={() => handleEdit(map)} className="p-2 bg-slate-800 hover:bg-indigo-600 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
                     <button onClick={() => setDeleteConfirmId(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -347,6 +380,14 @@ export default function MapsPage() {
                   <h3 className="font-bold text-lg">{map.displayName}</h3>
                   <p className="text-slate-400 text-sm font-mono">{map.identifier}</p>
                   
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {(map.categories || []).map(cat => (
+                      <span key={cat} className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-xs border border-slate-700">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+
                   <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4">
                     <button onClick={() => handleEdit(map)} className="p-2 bg-slate-800 hover:bg-indigo-600 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
                     <button onClick={() => setDeleteConfirmId(map.id)} className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>

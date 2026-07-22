@@ -175,8 +175,10 @@ const en = {
       log: "Turns logging 'on' or 'off'",
       mp_logmoney: "Turns money logging on/off (0 or 1)",
       mp_logdetail: "Combat damage logging (0=off, 1=enemy, 2=friendly, 3=all)",
-      cs2_startmap: "Initial map to load",
-      cs2_gamealias: "Game type alias (competitive, casual)"
+      cs2_startmap: "Starting map on load",
+      cs2_gamealias: "Game mode alias (competitive, casual)",
+      cs2_host_workshop_map: "Steam Workshop Map ID to load/download",
+      cs2_host_workshop_collection: "Steam Workshop Collection ID to download"
     }
   },
   teams: {
