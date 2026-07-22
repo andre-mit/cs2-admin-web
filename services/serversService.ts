@@ -19,6 +19,11 @@ export interface ServerStatus {
   response?: string;
 }
 
+export interface ServerHealth {
+  status: "online" | "starting" | "restarting" | "offline";
+  isDynamic: boolean;
+}
+
 export interface PluginSelectionItem {
   pluginId: number;
   configOverridesJson?: string;
@@ -55,6 +60,7 @@ export const serversService = {
     method: "DELETE",
   }),
   getStatus: (id: number) => fetchApi<ServerStatus>(`/api/v1/servers/${id}/status`),
+  getHealth: (id: number) => fetchApi<ServerHealth>(`/api/v1/servers/${id}/health`),
 
   updateBaseServer: () =>
     fetchApi<{ message: string }>("/api/v1/servers/update-base", {
@@ -71,6 +77,27 @@ export const serversService = {
         onMessage(data);
       } catch (err) {
         onError(err);
+      }
+    };
+    
+    eventSource.onerror = (err) => {
+      onError(err);
+    };
+    
+    return eventSource;
+  },
+
+  getLogsStream: (id: number, token: string, onMessage: (data: { log: string }) => void, onError: (err: any) => void) => {
+    const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1/servers/${id}/logs?access_token=${token}`;
+    const eventSource = new EventSource(url);
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessage(data);
+      } catch (err) {
+        // Fallback for raw text
+        onMessage({ log: event.data });
       }
     };
     

@@ -3,7 +3,7 @@
 import { Server, Plus, X, Wifi, WifiOff, Loader2, Play, Square, RotateCcw, Trash2, Copy, Zap, Monitor, ChevronDown, ChevronUp } from "lucide-react";
 import useSWR from "swr";
 import { useState } from "react";
-import { serversService, CS2Server, DynamicServerResult, PluginSelectionItem } from "@/services/serversService";
+import { serversService, CS2Server, DynamicServerResult, PluginSelectionItem, ServerHealth } from "@/services/serversService";
 import { pluginsService, GamePlugin } from "@/services/pluginsService";
 import { useEffect } from "react";
 import { swrFetcher } from "@/services/apiClient";
@@ -12,11 +12,8 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { presetsService, ServerPreset } from "@/services/presetsService";
 import { getAuthToken } from "@/services/apiClient";
 import { GameMap } from "@/services/mapsService";
+import { ServerLogsModal } from "@/components/ServerLogsModal";
 
-interface ServerStatus {
-  loading: boolean;
-  online: boolean | null;
-}
 
 const ADVANCED_VARIABLES = [
   { key: "CS2_CHEATS", cvar: "sv_cheats", type: "number", descKey: "sv_cheats", default: "0" },
@@ -58,7 +55,8 @@ export default function ServersPage() {
   const [customVarValue, setCustomVarValue] = useState("");
   const [availablePlugins, setAvailablePlugins] = useState<GamePlugin[]>([]);
   const [editingPluginConfig, setEditingPluginConfig] = useState<number | null>(null);
-  const [statusMap, setStatusMap] = useState<Record<number, ServerStatus>>({});
+  const [healthMap, setHealthMap] = useState<Record<number, ServerHealth & { loading?: boolean }>>({});
+  const [selectedLogServer, setSelectedLogServer] = useState<{ id: number, name: string } | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
   const [lastCreated, setLastCreated] = useState<DynamicServerResult | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -247,23 +245,39 @@ export default function ServersPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const testRcon = async (serverId: number) => {
-    setStatusMap(prev => ({ ...prev, [serverId]: { loading: true, online: null } }));
+  const fetchHealth = async (serverId: number) => {
+    setHealthMap(prev => ({ ...prev, [serverId]: { ...prev[serverId], loading: true } }));
     try {
-      const data = await serversService.getStatus(serverId);
-      setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: data.online } }));
+      const data = await serversService.getHealth(serverId);
+      setHealthMap(prev => ({ ...prev, [serverId]: { ...data, loading: false } }));
     } catch {
-      setStatusMap(prev => ({ ...prev, [serverId]: { loading: false, online: false } }));
+      setHealthMap(prev => ({ ...prev, [serverId]: { status: "offline", isDynamic: false, loading: false } }));
     }
   };
 
+  useEffect(() => {
+    if (!servers || servers.length === 0) return;
+    
+    // Initial fetch for all
+    servers.forEach(s => fetchHealth(s.id));
+    
+    // Poll every 10 seconds
+    const interval = setInterval(() => {
+      servers.forEach(s => fetchHealth(s.id));
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [servers]);
+
   const getStatusIndicator = (serverId: number) => {
-    const status = statusMap[serverId];
-    if (!status) return null;
-    if (status.loading) return <Loader2 className="w-4 h-4 animate-spin text-blue-400" />;
-    if (status.online === true) return <Wifi className="w-4 h-4 text-green-400" />;
-    if (status.online === false) return <WifiOff className="w-4 h-4 text-red-400" />;
-    return null;
+    const health = healthMap[serverId];
+    if (!health) return <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-slate-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-slate-500"></span></span>;
+    
+    if (health.status === "online") return <span className="flex h-3 w-3" title="Online"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span>;
+    if (health.status === "starting") return <span className="flex h-3 w-3" title="Starting..."><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>;
+    if (health.status === "restarting") return <span className="flex h-3 w-3" title="Restarting..."><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-blue-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>;
+    
+    return <span className="flex h-3 w-3" title="Offline"><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>;
   };
 
   return (
@@ -828,13 +842,19 @@ export default function ServersPage() {
               </div>
             </div>
             <div className="p-4 bg-slate-950/50 flex-1">
-              {statusMap[server.id]?.online === true && (
-                <p className="text-sm text-green-400 font-medium">{t("servers.rcon_success")}</p>
+              {healthMap[server.id]?.status === "online" && (
+                <p className="text-sm text-green-400 font-medium">{t("servers.rcon_success") || "Online & RCON Ready"}</p>
               )}
-              {statusMap[server.id]?.online === false && (
-                <p className="text-sm text-red-400 font-medium">{t("servers.rcon_failed")}</p>
+              {healthMap[server.id]?.status === "offline" && (
+                <p className="text-sm text-red-400 font-medium">{t("servers.rcon_failed") || "Offline"}</p>
               )}
-              {statusMap[server.id]?.online == null && (
+              {healthMap[server.id]?.status === "starting" && (
+                <p className="text-sm text-amber-400 font-medium">Starting...</p>
+              )}
+              {healthMap[server.id]?.status === "restarting" && (
+                <p className="text-sm text-blue-400 font-medium">Restarting...</p>
+              )}
+              {!healthMap[server.id] && (
                 <p className="text-sm text-slate-500">{t("servers.ready")}</p>
               )}
               {server.tvPort && (
@@ -901,12 +921,22 @@ export default function ServersPage() {
                     </button>
                   </>
                 )}
+                {server.isDynamic && (
+                  <button
+                    onClick={() => setSelectedLogServer({ id: server.id, name: server.displayName || "CS2 Server" })}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-md transition-colors"
+                    title="View Live Logs"
+                  >
+                    <span className="text-emerald-400 font-bold">&gt;_</span>
+                    Terminal
+                  </button>
+                )}
                 <button
-                  onClick={() => testRcon(server.id)}
-                  disabled={statusMap[server.id]?.loading}
-                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+                  onClick={() => fetchHealth(server.id)}
+                  disabled={healthMap[server.id]?.loading}
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 ml-2"
                 >
-                  {statusMap[server.id]?.loading ? t("servers.testing") : t("servers.test_rcon")}
+                  {healthMap[server.id]?.loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : <RotateCcw className="w-4 h-4 inline" />}
                 </button>
               </div>
             </div>
@@ -921,6 +951,14 @@ export default function ServersPage() {
         onConfirm={handleDeleteServer}
         onCancel={() => setDeleteConfirmId(null)}
       />
+
+      {selectedLogServer && (
+        <ServerLogsModal
+          serverId={selectedLogServer.id}
+          serverName={selectedLogServer.name}
+          onClose={() => setSelectedLogServer(null)}
+        />
+      )}
     </div>
   );
 }
