@@ -16,6 +16,7 @@ import { ServerLogsModal } from "@/components/ServerLogsModal";
 
 
 const ADVANCED_VARIABLES = [
+  { key: "CS2_ADDITIONAL_ARGS", cvar: "CS2_ADDITIONAL_ARGS", type: "text", descKey: "cs2_additional_args", default: "-tickrate 128" },
   { key: "CS2_CHEATS", cvar: "sv_cheats", type: "number", descKey: "sv_cheats", default: "0" },
   { key: "CS2_SERVER_HIBERNATE", cvar: "sv_hibernate_when_empty", type: "number", descKey: "sv_hibernate_when_empty", default: "1" },
   { key: "TV_AUTORECORD", cvar: "tv_autorecord", type: "number", descKey: "tv_autorecord", default: "1" },

@@ -182,7 +182,8 @@ const pt = {
       cs2_startmap: "Mapa inicial ao carregar",
       cs2_gamealias: "Alias do tipo de jogo (competitive, casual)",
       cs2_host_workshop_map: "ID do mapa da oficina para baixar/iniciar (Workshop)",
-      cs2_host_workshop_collection: "ID da coleção da oficina para baixar (Workshop)"
+      cs2_host_workshop_collection: "ID da coleção da oficina para baixar (Workshop)",
+      cs2_additional_args: "Argumentos adicionais de inicialização (ex: -tickrate 128 +mm_extra_addons 3163629484)"
     }
   },
   teams: {

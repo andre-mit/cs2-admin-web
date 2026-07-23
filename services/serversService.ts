@@ -87,16 +87,17 @@ export const serversService = {
     return eventSource;
   },
 
-  getLogsStream: (id: number, token: string, onMessage: (data: { log: string }) => void, onError: (err: any) => void) => {
+  getLogsStream: (id: number, token: string, onMessage: (data: { log?: string; ping?: boolean }) => void, onError: (err: any) => void) => {
     const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1/servers/${id}/logs?access_token=${token}`;
     const eventSource = new EventSource(url);
     
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        onMessage(data);
+        if (!data.ping) {
+          onMessage(data);
+        }
       } catch (err) {
-        // Fallback for raw text
         onMessage({ log: event.data });
       }
     };
@@ -106,6 +107,10 @@ export const serversService = {
     };
     
     return eventSource;
+  },
+
+  getLogsDownloadUrl: (id: number, token: string) => {
+    return `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1/servers/${id}/logs/download?access_token=${token}`;
   },
 
   getGlobalEventsStream: (token: string, onMessage: (event: { type: string, data: any }) => void, onError: (err: any) => void) => {

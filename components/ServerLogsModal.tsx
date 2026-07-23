@@ -48,8 +48,9 @@ export function ServerLogsModal({ serverId, serverName, onClose }: ServerLogsMod
         serverId, 
         token,
         (data) => {
-          if (data && data.log) {
-            setLogs(prev => [...prev, data.log]);
+          if (data && typeof data.log === "string") {
+            const logText: string = data.log;
+            setLogs(prev => [...prev, logText]);
           }
         },
         (err) => {
@@ -81,14 +82,27 @@ export function ServerLogsModal({ serverId, serverName, onClose }: ServerLogsMod
     setAutoScroll(isAtBottom);
   };
 
-  const downloadLogs = () => {
-    const blob = new Blob([logs.join("")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `server-${serverId}-logs.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadLogs = async () => {
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+      const downloadUrl = serversService.getLogsDownloadUrl(serverId, token);
+      const windowRef = window.open(downloadUrl, "_blank");
+      if (!windowRef) {
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = `server-${serverId}-logs.txt`;
+        a.click();
+      }
+    } catch {
+      const blob = new Blob([logs.join("")], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `server-${serverId}-logs.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   return (
