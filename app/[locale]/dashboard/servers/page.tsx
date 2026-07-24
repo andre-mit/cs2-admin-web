@@ -52,6 +52,7 @@ export default function ServersPage() {
     serverVariables: Record<string, string>;
   }>({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [], serverVariables: {} });
   const [showAdvancedVars, setShowAdvancedVars] = useState(false);
+  const [additionalArgsList, setAdditionalArgsList] = useState<string[]>(["-tickrate 128"]);
   const [customVarKey, setCustomVarKey] = useState("");
   const [customVarValue, setCustomVarValue] = useState("");
   const [availablePlugins, setAvailablePlugins] = useState<GamePlugin[]>([]);
@@ -67,9 +68,9 @@ export default function ServersPage() {
   const [mapCategoryFilter, setMapCategoryFilter] = useState<string>("all");
 
   const allMapCategories = Array.from(new Set(apiMaps.flatMap(m => m.categories || []))).sort();
-  const filteredMaps = mapCategoryFilter === "all" 
-      ? apiMaps 
-      : apiMaps.filter(m => (m.categories || []).includes(mapCategoryFilter));
+  const filteredMaps = mapCategoryFilter === "all"
+    ? apiMaps
+    : apiMaps.filter(m => (m.categories || []).includes(mapCategoryFilter));
 
   const [baseUpdateStatus, setBaseUpdateStatus] = useState<string | null>(null);
   const [baseUpdateProgress, setBaseUpdateProgress] = useState<number>(0);
@@ -90,12 +91,13 @@ export default function ServersPage() {
         serverVariables: {},
         pluginSelections: []
       }));
+      setAdditionalArgsList(["-tickrate 128"]);
       return;
     }
-    
+
     const preset = apiPresets.find(p => p.id === Number(presetId));
     if (!preset) return;
-    
+
     const newSelections: PluginSelectionItem[] = [];
     preset.pluginIds.forEach(pluginId => {
       const matched = availablePlugins.find(p => p.id === pluginId);
@@ -103,6 +105,14 @@ export default function ServersPage() {
         newSelections.push({ pluginId: matched.id, configOverridesJson: matched.configFilesJson });
       }
     });
+
+    const presetArgs = preset.serverVariables?.["CS2_ADDITIONAL_ARGS"];
+    if (presetArgs) {
+      const parsedArgs = presetArgs.split(/(?=\s[-+])/).map(s => s.trim()).filter(Boolean);
+      setAdditionalArgsList(parsedArgs.length > 0 ? parsedArgs : ["-tickrate 128"]);
+    } else {
+      setAdditionalArgsList(["-tickrate 128"]);
+    }
 
     setDynamicFormData(prev => ({
       ...prev,
@@ -145,6 +155,7 @@ export default function ServersPage() {
       const result = await serversService.createDynamic(dynamicFormData);
       setLastCreated(result);
       setDynamicFormData({ name: "CS2 Server", password: "", rconPassword: "", maxPlayers: 10, pluginSelections: [], serverVariables: {} });
+      setAdditionalArgsList(["-tickrate 128"]);
       setSelectedPreset("none");
       setIsDynamicModalOpen(false);
       mutate();
@@ -161,11 +172,11 @@ export default function ServersPage() {
     setDynamicError(null);
     setBaseUpdateStatus(null);
     setBaseUpdateProgress(0);
-    
+
     try {
       const token = await getAuthToken();
       if (!token) throw new Error("Unauthorized");
-      
+
       const res = await serversService.updateBaseServer();
       // Start SSE listening
       const sse = serversService.getUpdateBaseStream(
@@ -175,7 +186,7 @@ export default function ServersPage() {
           setBaseUpdateProgress(data.progressPercentage);
           setBaseUpdateDownloadedBytes(data.downloadedBytes);
           setBaseUpdateTotalBytes(data.totalBytes);
-          
+
           if (!data.isUpdating) {
             sse.close();
             setIsUpdatingBase(false);
@@ -190,7 +201,7 @@ export default function ServersPage() {
           setBaseUpdateStatus(null);
         }
       );
-      
+
     } catch (err: any) {
       console.error("Failed to start base update:", err);
       if (err.message && err.message.includes("already in progress")) {
@@ -258,10 +269,10 @@ export default function ServersPage() {
 
   useEffect(() => {
     if (!servers || servers.length === 0) return;
-    
+
     // Initial fetch for all existing servers
     servers.forEach(s => fetchHealth(s.id));
-    
+
     let eventSource: EventSource | null = null;
 
     const connectEvents = async () => {
@@ -272,13 +283,13 @@ export default function ServersPage() {
         token,
         (event) => {
           if (event.type === "status_change") {
-            setHealthMap(prev => ({ 
-              ...prev, 
-              [event.data.serverId]: { 
-                status: event.data.status, 
-                isDynamic: event.data.isDynamic, 
-                loading: false 
-              } 
+            setHealthMap(prev => ({
+              ...prev,
+              [event.data.serverId]: {
+                status: event.data.status,
+                isDynamic: event.data.isDynamic,
+                loading: false
+              }
             }));
           } else if (event.type === "server_list_changed") {
             // Trigger an SWR revalidation to fetch new/deleted servers
@@ -303,11 +314,11 @@ export default function ServersPage() {
   const getStatusIndicator = (serverId: number) => {
     const health = healthMap[serverId];
     if (!health) return <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-slate-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-slate-500"></span></span>;
-    
+
     if (health.status === "online") return <span className="flex h-3 w-3" title="Online"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span>;
     if (health.status === "starting") return <span className="flex h-3 w-3" title="Starting..."><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>;
     if (health.status === "restarting") return <span className="flex h-3 w-3" title="Restarting..."><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-blue-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span></span>;
-    
+
     return <span className="flex h-3 w-3" title="Offline"><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>;
   };
 
@@ -365,7 +376,6 @@ export default function ServersPage() {
         </div>
       )}
 
-      {/* Last created dynamic server banner */}
       {lastCreated && (
         <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-xl p-4 flex items-center justify-between">
           <div>
@@ -391,7 +401,6 @@ export default function ServersPage() {
         </div>
       )}
 
-      {/* Static server modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-screen">
@@ -477,7 +486,6 @@ export default function ServersPage() {
         </div>
       )}
 
-      {/* Dynamic server modal */}
       {isDynamicModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-screen">
@@ -537,46 +545,46 @@ export default function ServersPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">Start Map</label>
-                  <select
-                    onChange={(e) => {
-                      const mapId = e.target.value;
-                      if (mapId === "none") {
-                         const newVars = { ...dynamicFormData.serverVariables };
-                         delete newVars["CS2_STARTMAP"];
-                         delete newVars["CS2_HOST_WORKSHOP_MAP"];
-                         setDynamicFormData({ ...dynamicFormData, serverVariables: newVars });
-                         return;
-                      }
-                      const map = apiMaps.find(m => m.id.toString() === mapId);
-                      if (map) {
-                         const newVars = { ...dynamicFormData.serverVariables };
-                         if (map.isCommunity) {
-                             newVars["CS2_HOST_WORKSHOP_MAP"] = map.identifier;
-                             delete newVars["CS2_STARTMAP"];
-                         } else {
-                             newVars["CS2_STARTMAP"] = map.identifier;
-                             delete newVars["CS2_HOST_WORKSHOP_MAP"];
-                         }
-                         setDynamicFormData({ ...dynamicFormData, serverVariables: newVars });
-                      }
-                    }}
-                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="none">Default / From Preset</option>
-                    <optgroup label="Standard Maps">
-                      {filteredMaps.filter(m => !m.isCommunity).map(m => (
-                        <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Workshop Maps">
-                      {filteredMaps.filter(m => m.isCommunity).map(m => (
-                        <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
-                      ))}
-                    </optgroup>
-                  </select>
+                    <select
+                      onChange={(e) => {
+                        const mapId = e.target.value;
+                        if (mapId === "none") {
+                          const newVars = { ...dynamicFormData.serverVariables };
+                          delete newVars["CS2_STARTMAP"];
+                          delete newVars["CS2_HOST_WORKSHOP_MAP"];
+                          setDynamicFormData({ ...dynamicFormData, serverVariables: newVars });
+                          return;
+                        }
+                        const map = apiMaps.find(m => m.id.toString() === mapId);
+                        if (map) {
+                          const newVars = { ...dynamicFormData.serverVariables };
+                          if (map.isCommunity) {
+                            newVars["CS2_HOST_WORKSHOP_MAP"] = map.identifier;
+                            delete newVars["CS2_STARTMAP"];
+                          } else {
+                            newVars["CS2_STARTMAP"] = map.identifier;
+                            delete newVars["CS2_HOST_WORKSHOP_MAP"];
+                          }
+                          setDynamicFormData({ ...dynamicFormData, serverVariables: newVars });
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="none">Default / From Preset</option>
+                      <optgroup label="Standard Maps">
+                        {filteredMaps.filter(m => !m.isCommunity).map(m => (
+                          <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Workshop Maps">
+                        {filteredMaps.filter(m => m.isCommunity).map(m => (
+                          <option key={m.id} value={m.id}>{m.displayName} ({m.identifier})</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">{t("servers.server_password")}</label>
                     <div className="flex gap-2">
@@ -631,7 +639,6 @@ export default function ServersPage() {
                 </div>
               </div>
 
-              {/* Advanced Variables */}
               <div className="mt-4 pt-4 border-t border-slate-800">
                 <button
                   type="button"
@@ -647,38 +654,111 @@ export default function ServersPage() {
                       {t("servers.advanced_vars.description")}
                     </p>
                     <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                      {ADVANCED_VARIABLES.map(v => (
-                        <div key={v.key} className="flex flex-col gap-1 bg-slate-950 p-2 rounded border border-slate-800">
-                          <label className="text-xs font-medium text-slate-300 flex justify-between">
-                            <span>{v.cvar}</span>
-                            <span className="text-slate-500 font-mono text-[10px]">{v.key}</span>
-                          </label>
-                          <input
-                            type={v.type === "number" ? "number" : "text"}
-                            placeholder={v.default}
-                            value={dynamicFormData.serverVariables[v.key] || ""}
-                            onChange={(e) => setDynamicFormData({
-                              ...dynamicFormData,
-                              serverVariables: {
-                                ...dynamicFormData.serverVariables,
-                                [v.key]: e.target.value
-                              }
-                            })}
-                            className="w-full px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
-                          />
-                          <p className="text-[10px] text-slate-500">{t(`servers.advanced_vars.${v.descKey}` as any)}</p>
-                        </div>
-                      ))}
-                      
-                      {/* Custom variables added by user */}
+                      {ADVANCED_VARIABLES.map(v => {
+                        if (v.key === "CS2_ADDITIONAL_ARGS") {
+                          return (
+                            <div key={v.key} className="flex flex-col gap-2 bg-slate-950 p-2.5 rounded border border-slate-800">
+                              <label className="text-xs font-medium text-slate-300 flex justify-between items-center">
+                                <span>{v.cvar}</span>
+                                <span className="text-slate-500 font-mono text-[10px]">{v.key}</span>
+                              </label>
+
+                              <div className="space-y-2">
+                                {additionalArgsList.map((arg, idx) => (
+                                  <div key={idx} className="flex gap-2 items-center">
+                                    <input
+                                      type="text"
+                                      placeholder={idx === 0 ? "-tickrate 128" : "-arg_name value"}
+                                      value={arg}
+                                      onChange={(e) => {
+                                        const updated = [...additionalArgsList];
+                                        updated[idx] = e.target.value;
+                                        setAdditionalArgsList(updated);
+                                        const combined = updated.map(x => x.trim()).filter(Boolean).join(" ");
+                                        setDynamicFormData(prev => ({
+                                          ...prev,
+                                          serverVariables: {
+                                            ...prev.serverVariables,
+                                            CS2_ADDITIONAL_ARGS: combined
+                                          }
+                                        }));
+                                      }}
+                                      className="flex-1 px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                                    />
+                                    {additionalArgsList.length > 1 && (
+                                      <button
+                                        type="button"
+                                        title={t("servers.advanced_vars.remove_arg")}
+                                        onClick={() => {
+                                          const updated = additionalArgsList.filter((_, i) => i !== idx);
+                                          setAdditionalArgsList(updated);
+                                          const combined = updated.map(x => x.trim()).filter(Boolean).join(" ");
+                                          setDynamicFormData(prev => ({
+                                            ...prev,
+                                            serverVariables: {
+                                              ...prev.serverVariables,
+                                              CS2_ADDITIONAL_ARGS: combined
+                                            }
+                                          }));
+                                        }}
+                                        className="p-1.5 text-red-400 hover:text-red-300 hover:bg-slate-800 rounded transition-colors flex items-center justify-center"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...additionalArgsList, ""];
+                                    setAdditionalArgsList(updated);
+                                  }}
+                                  className="flex items-center gap-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 pt-1"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  {t("servers.advanced_vars.add_arg")}
+                                </button>
+                              </div>
+
+                              <p className="text-[10px] text-slate-500">{t(`servers.advanced_vars.${v.descKey}` as any)}</p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={v.key} className="flex flex-col gap-1 bg-slate-950 p-2 rounded border border-slate-800">
+                            <label className="text-xs font-medium text-slate-300 flex justify-between">
+                              <span>{v.cvar}</span>
+                              <span className="text-slate-500 font-mono text-[10px]">{v.key}</span>
+                            </label>
+                            <input
+                              type={v.type === "number" ? "number" : "text"}
+                              placeholder={v.default}
+                              value={dynamicFormData.serverVariables[v.key] || ""}
+                              onChange={(e) => setDynamicFormData({
+                                ...dynamicFormData,
+                                serverVariables: {
+                                  ...dynamicFormData.serverVariables,
+                                  [v.key]: e.target.value
+                                }
+                              })}
+                              className="w-full px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                            />
+                            <p className="text-[10px] text-slate-500">{t(`servers.advanced_vars.${v.descKey}` as any)}</p>
+                          </div>
+                        );
+                      })}
+
                       {Object.entries(dynamicFormData.serverVariables)
                         .filter(([k]) => !ADVANCED_VARIABLES.some(v => v.key === k))
                         .map(([k, v]) => (
                           <div key={k} className="flex flex-col gap-1 bg-slate-950 p-2 rounded border border-slate-800">
                             <label className="text-xs font-medium text-emerald-400 flex justify-between items-center">
                               <span>{k} ({t("servers.advanced_vars.custom_title")})</span>
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={() => {
                                   const newVars = { ...dynamicFormData.serverVariables };
                                   delete newVars[k];
@@ -702,10 +782,9 @@ export default function ServersPage() {
                               className="w-full px-2 py-1 text-sm bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
-                      ))}
+                        ))}
                     </div>
-                    
-                    {/* Add custom variable */}
+
                     <div className="flex gap-2 mt-2 pt-2 border-t border-slate-800">
                       <input
                         type="text"
@@ -745,7 +824,6 @@ export default function ServersPage() {
                 )}
               </div>
 
-              {/* Plugins Selection */}
               <div className="mt-4 pt-4 border-t border-slate-800">
                 <label className="block text-sm font-medium text-slate-300 mb-2">Plugins</label>
                 {availablePlugins.length === 0 ? (

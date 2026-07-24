@@ -183,7 +183,9 @@ const en = {
       cs2_gamealias: "Game mode alias (competitive, casual)",
       cs2_host_workshop_map: "Steam Workshop Map ID to load/download",
       cs2_host_workshop_collection: "Steam Workshop Collection ID to download",
-      cs2_additional_args: "Additional launch arguments (e.g. -tickrate 128 +mm_extra_addons 3163629484)"
+      cs2_additional_args: "Additional launch arguments (e.g. -tickrate 128 +mm_extra_addons 3163629484)",
+      add_arg: "Add Parameter",
+      remove_arg: "Remove Parameter"
     }
   },
   teams: {
